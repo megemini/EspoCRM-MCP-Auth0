@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "espocrm-mcp-auth0"
+version = "0.1.0"
+description = "EspoCRM MCP Server with Auth0 authentication"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [{include = "*", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+python-dotenv = "^1.1.1"
+mcp = "^1.14.1"
+auth0-api-python = "^1.0.0b6"
+starlette = "^0.48.0"
+uvicorn = "^0.36.0"
+httpx = "^0.28.0"
+pydantic = "^2.0.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "ruff (>=0.13.1,<0.14.0)"
+]
