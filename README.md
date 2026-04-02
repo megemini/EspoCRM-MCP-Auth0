@@ -1,6 +1,6 @@
 # EspoCRM MCP Server with Auth0 Authentication
 
-A Python-based Model Context Protocol (MCP) server for EspoCRM with Auth0 authentication and authorization.
+A Model Context Protocol (MCP) server for EspoCRM with Auth0 authentication and authorization.
 
 ## Overview
 
@@ -310,7 +310,7 @@ This is the first version with basic functionality. Future versions may include:
 
 ## License
 
-MIT License
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 

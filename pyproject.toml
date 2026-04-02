@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "EspoCRM MCP Server with Auth0 authentication"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
+license = "Apache-2.0"
 packages = [{include = "*", from = "src"}]
 
 [tool.poetry.dependencies]
