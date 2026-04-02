@@ -1,7 +1,9 @@
 """MCP tools for EspoCRM operations."""
+from __future__ import annotations
+
 import json
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from mcp.server.fastmcp import Context
 
@@ -12,7 +14,7 @@ from .espocrm import EspoCRMClient, WhereClause
 logger = logging.getLogger(__name__)
 
 # Global EspoCRM client instance
-_espocrm_client: EspoCRMClient | None = None
+_espocrm_client: Optional[EspoCRMClient] = None
 
 
 def get_espocrm_client() -> EspoCRMClient:

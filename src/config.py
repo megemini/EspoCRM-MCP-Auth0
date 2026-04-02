@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, Optional, List
 
 from dotenv import load_dotenv
 
@@ -13,7 +13,7 @@ class EspoCRMConfig:
     """EspoCRM connection configuration."""
     url: str
     api_key: str
-    secret_key: str | None = None
+    secret_key: Optional[str] = None
     auth_method: Literal["apikey", "hmac"] = "apikey"
     timeout: int = 30
 
@@ -27,7 +27,7 @@ class Config:
     espocrm: EspoCRMConfig
     port: int = 3001
     debug: bool = True
-    cors_origins: list[str] = field(default_factory=lambda: ["*"])
+    cors_origins: List[str] = field(default_factory=lambda: ["*"])
 
     @classmethod
     def from_env(cls) -> Config:

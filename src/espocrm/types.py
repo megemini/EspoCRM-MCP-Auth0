@@ -1,7 +1,8 @@
-"""Type definitions for EspoCRM API."""
 from __future__ import annotations
 
-from typing import Any, Literal
+"""Type definitions for EspoCRM API."""
+
+from typing import Any, List, Dict, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -14,11 +15,11 @@ class WhereClause(BaseModel):
         "notContains", "startsWith", "endsWith", "in", "notIn",
         "isTrue", "isFalse", "isNull", "isNotNull", "or", "and"
     ]
-    attribute: str | None = None
+    attribute: Optional[str] = None
     value: Any = None
 
 
 class EspoCRMResponse(BaseModel):
     """Standard EspoCRM API response."""
-    total: int | None = None
-    list: list[dict[str, Any]] | None = None
+    total: Optional[int] = None
+    list: Optional[List[Dict[str, Any]]] = None
