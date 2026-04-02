@@ -48,7 +48,7 @@ All tools (except `health_check`) require valid Auth0 authentication with approp
 ### Prerequisites
 
 - Python 3.10 or higher
-- Poetry (for dependency management)
+- pip (Python package manager)
 - Auth0 account with configured API
 - EspoCRM instance with API access
 
@@ -59,12 +59,25 @@ All tools (except `health_check`) require valid Auth0 authentication with approp
    cd EspoCRM-MCP-Auth0
    ```
 
-2. **Install dependencies**
+2. **Create and activate virtual environment**
    ```bash
-   poetry install
+   # Create virtual environment
+   python -m venv venv
+
+   # Activate virtual environment
+   # On Linux/macOS:
+   source venv/bin/activate
+
+   # On Windows:
+   # venv\Scripts\activate
    ```
 
-3. **Configure environment variables**
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure environment variables**
    ```bash
    cp .env.example .env
    ```
@@ -88,14 +101,14 @@ All tools (except `health_check`) require valid Auth0 authentication with approp
    CORS_ORIGINS=*
    ```
 
-4. **Run the server**
+5. **Run the server**
    ```bash
-   poetry run python -m src.server
+   python -m src.server
    ```
 
    Or using uvicorn directly:
    ```bash
-   poetry run uvicorn src.server:app --port 3001
+   uvicorn src.server:app --port 3001
    ```
 
 ## Configuration
@@ -255,20 +268,32 @@ src/
 
 ### Running in Development Mode
 
+Make sure your virtual environment is activated:
+
 ```bash
-poetry run python -m src.server
+# On Linux/macOS:
+source venv/bin/activate
+
+# On Windows:
+# venv\Scripts\activate
+```
+
+Then run the server:
+
+```bash
+python -m src.server
 ```
 
 ### Code Formatting
 
 ```bash
-poetry run ruff format src/
+ruff format src/
 ```
 
 ### Linting
 
 ```bash
-poetry run ruff check src/
+ruff check src/
 ```
 
 ## Future Enhancements
