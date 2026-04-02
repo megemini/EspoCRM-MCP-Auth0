@@ -19,12 +19,26 @@ class EspoCRMConfig:
 
 
 @dataclass(frozen=True)
+class FGAConfig:
+    """FGA (Fine-Grained Authorization) configuration."""
+    api_url: str
+    store_id: str
+    client_id: str
+    client_secret: str
+    authorization_model_id: Optional[str] = None
+    api_issuer: str = "auth.fga.dev"
+    api_audience: Optional[str] = None
+    enabled: bool = True
+
+
+@dataclass(frozen=True)
 class Config:
     """Application configuration."""
     auth0_domain: str
     auth0_audience: str
     mcp_server_url: str
     espocrm: EspoCRMConfig
+    fga: Optional[FGAConfig] = None
     port: int = 3001
     debug: bool = True
     cors_origins: List[str] = field(default_factory=lambda: ["*"])
@@ -56,11 +70,39 @@ class Config:
             timeout=int(os.getenv("ESPOCRM_TIMEOUT", "30")),
         )
 
+        # Load FGA configuration (optional)
+        fga_config = None
+        fga_enabled = os.getenv("FGA_ENABLED", "false").lower() == "true"
+        
+        if fga_enabled:
+            fga_api_url = os.getenv("FGA_API_URL")
+            fga_store_id = os.getenv("FGA_STORE_ID")
+            fga_client_id = os.getenv("FGA_CLIENT_ID")
+            fga_client_secret = os.getenv("FGA_CLIENT_SECRET")
+            
+            if not all([fga_api_url, fga_store_id, fga_client_id, fga_client_secret]):
+                raise ValueError(
+                    "FGA is enabled but missing required configuration. "
+                    "Please set FGA_API_URL, FGA_STORE_ID, FGA_CLIENT_ID, and FGA_CLIENT_SECRET"
+                )
+            
+            fga_config = FGAConfig(
+                api_url=fga_api_url,
+                store_id=fga_store_id,
+                client_id=fga_client_id,
+                client_secret=fga_client_secret,
+                authorization_model_id=os.getenv("FGA_AUTHORIZATION_MODEL_ID"),
+                api_issuer=os.getenv("FGA_API_ISSUER", "auth.fga.dev"),
+                api_audience=os.getenv("FGA_API_AUDIENCE"),
+                enabled=True,
+            )
+
         return cls(
             auth0_domain=auth0_domain,
             auth0_audience=auth0_audience,
             mcp_server_url=os.getenv("MCP_SERVER_URL", "http://localhost:3001"),
             espocrm=espocrm_config,
+            fga=fga_config,
             port=int(os.getenv("PORT", "3001")),
             debug=os.getenv("DEBUG", "false").lower() == "true",
             cors_origins=os.getenv("CORS_ORIGINS", "*").split(","),

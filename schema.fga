@@ -1,0 +1,87 @@
+model
+  schema 1.1
+
+# User type with team relationships
+type user
+    relations
+        define team: [team]
+        define can_manage: manager from team
+
+# Team type with member and manager relationships
+type team
+    relations
+        define member: [user] or manager
+        define manager: [user]
+
+# Contact entity - CRM contact records
+type contact
+    relations
+        define owner: [user]
+        define assigned: [user]
+        define team: [team]
+        define account: [account]
+        define can_read: owner or assigned or member from team or can_manage from assigned
+        define can_update: owner or assigned or can_manage from assigned
+        define can_delete: owner or can_manage from assigned
+
+# Account entity - CRM company/organization records
+type account
+    relations
+        define owner: [user]
+        define assigned: [user]
+        define team: [team]
+        define can_read: owner or assigned or member from team
+        define can_update: owner or assigned
+        define can_delete: owner
+
+# Lead entity - CRM sales leads
+type lead
+    relations
+        define owner: [user]
+        define assigned: [user]
+        define team: [team]
+        define can_read: owner or assigned or member from team
+        define can_update: owner or assigned
+        define can_delete: owner
+
+# Opportunity entity - CRM sales opportunities
+type opportunity
+    relations
+        define owner: [user]
+        define assigned: [user]
+        define team: [team]
+        define account: [account]
+        define can_read: owner or assigned or member from team or can_read from account
+        define can_update: owner or assigned
+        define can_delete: owner
+
+# Meeting entity - CRM meetings/appointments
+type meeting
+    relations
+        define owner: [user]
+        define assigned: [user]
+        define team: [team]
+        define attendee: [user]
+        define can_read: owner or assigned or attendee or member from team
+        define can_update: owner or assigned
+        define can_delete: owner
+
+# Task entity - CRM tasks
+type task
+    relations
+        define owner: [user]
+        define assigned: [user]
+        define team: [team]
+        define can_read: owner or assigned or member from team
+        define can_update: owner or assigned
+        define can_delete: owner
+
+# Document entity - CRM documents/files
+type document
+    relations
+        define owner: [user]
+        define team: [team]
+        define account: [account]
+        define can_read: owner or member from team or can_read from account
+        define can_update: owner
+        define can_delete: owner

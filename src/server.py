@@ -10,6 +10,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Mount
 
 from .auth0 import Auth0Mcp
+from .auth0.fga import FGAClient, set_fga_client
 from .config import get_config
 from .espocrm import EspoCRMClient
 from .tools import register_tools, set_espocrm_client
@@ -32,6 +33,25 @@ auth0_mcp = Auth0Mcp(
 espocrm_client = EspoCRMClient(config.espocrm)
 set_espocrm_client(espocrm_client)
 
+# Initialize FGA client (if configured)
+fga_client = None
+if config.fga and config.fga.enabled:
+    try:
+        fga_client = FGAClient(
+            api_url=config.fga.api_url,
+            store_id=config.fga.store_id,
+            client_id=config.fga.client_id,
+            client_secret=config.fga.client_secret,
+            authorization_model_id=config.fga.authorization_model_id,
+            api_issuer=config.fga.api_issuer,
+            api_audience=config.fga.api_audience,
+        )
+        set_fga_client(fga_client)
+        logger.info("FGA client initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize FGA client: {e}")
+        logger.warning("Continuing without FGA - using scope-based authorization only")
+
 # Register MCP tools
 register_tools(auth0_mcp)
 
@@ -45,9 +65,15 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         logger.info("EspoCRM MCP Server started successfully")
         logger.info(f"EspoCRM URL: {config.espocrm.url}")
         logger.info(f"Auth Method: {config.espocrm.auth_method}")
+        if fga_client:
+            logger.info("FGA: Enabled")
+        else:
+            logger.info("FGA: Disabled (using scope-based authorization)")
         yield
         # Cleanup
         await espocrm_client.close()
+        if fga_client:
+            await fga_client.close()
         logger.info("EspoCRM MCP Server shut down")
 
 

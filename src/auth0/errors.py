@@ -49,3 +49,20 @@ class MalformedAuthorizationRequest(Exception):
     def __init__(self, message: str | None = None):
         self.description = message or self.default_description
         super().__init__(self.description)
+
+
+class InsufficientPermission(Exception):
+    """
+    Raised when user lacks required FGA permissions.
+
+    This maps to HTTP 403 Forbidden status.
+    Indicates the user is authenticated and has necessary scopes,
+    but doesn't have fine-grained permission for the specific resource.
+    """
+    status_code = 403
+    error_code = "insufficient_permission"
+    default_description = "Insufficient permission"
+
+    def __init__(self, message: str | None = None):
+        self.description = message or self.default_description
+        super().__init__(self.description)

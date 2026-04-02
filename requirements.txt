@@ -7,5 +7,8 @@ uvicorn>=0.36.0
 httpx>=0.28.0
 pydantic>=2.0.0
 
+# FGA (Fine-Grained Authorization) dependencies
+openfga-sdk>=0.3.0
+
 # Development dependencies
 ruff>=0.13.1,<0.14.0
