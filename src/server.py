@@ -73,7 +73,15 @@ starlette_app = Starlette(
 app = CORSMiddleware(
     starlette_app,
     allow_origins=config.cors_origins,
-    allow_methods=["GET", "POST", "DELETE"],  # MCP streamable HTTP methods
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],  # MCP streamable HTTP methods
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "Mcp-Session-Id",
+        "Mcp-Protocol-Version",
+        "Last-Event-Id",
+    ],
     expose_headers=["Mcp-Session-Id"],
 )
 
