@@ -389,8 +389,6 @@ Fine-Grained Authorization provides entity-level access control. To enable FGA:
    - If FGA is not configured, only scope-based authorization is used
    - The initialization script can be run multiple times safely (handles duplicates)
 
-For detailed FGA documentation, see [FGA_INTEGRATION.md](FGA_INTEGRATION.md).
-
 ### OAuth Setup (Optional)
 
 OAuth enables dynamic token acquisition via Auth0 Universal Login, allowing MCP clients to authenticate interactively without manually managing tokens.
@@ -457,8 +455,6 @@ When using the MCP server with AI assistants, you need:
    - `espocrm:accounts:read` / `espocrm:accounts:write`
    - `espocrm:leads:read` / `espocrm:leads:write`
    - `espocrm:entities:read`
-
-3. **Token Usage**: Configure your MCP client to include the Auth0 token in the Authorization header
 
 ## Usage Examples
 
@@ -668,63 +664,6 @@ get_entity(
 }
 ```
 
-### Real-World Workflow Examples
-
-#### Scenario 1: Customer Onboarding
-
-**User**: "A new customer wants to sign up:
-- Company: StartupXYZ
-- Contact: Sarah Lee, email sarah@startupxyz.com
-Please create both the company and contact"
-
-**AI Assistant workflow**:
-1. Creates account: `create_account(name="StartupXYZ", ...)`
-2. Gets the returned `account_id`
-3. Creates contact: `create_contact(first_name="Sarah", last_name="Lee", email_address="sarah@startupxyz.com", account_id=account_id)`
-
-#### Scenario 2: Lead Management
-
-**User**: "Show me all new leads from the website and tell me how many we have"
-
-**AI Assistant workflow**:
-1. Searches leads: `search_leads(source="Website", status="New")`
-2. Analyzes the results
-3. Reports: "You have 5 new leads from the website"
-
-### Current Limitations
-
-**Supported Operations**:
-- ✅ Create contacts, accounts, and leads
-- ✅ Search contacts, accounts, and leads
-- ✅ View entity details
-- ✅ Generic entity search and retrieval
-
-**Not Yet Supported**:
-- ❌ Update entities
-- ❌ Delete entities
-- ❌ Create/manage opportunities
-- ❌ Create/manage tasks
-- ❌ Create/manage meetings
-- ❌ Bulk operations
-- ❌ Relationship management
-
-### Permission Requirements
-
-Each operation requires specific Auth0 scopes:
-
-| Tool | Required Scope |
-|------|----------------|
-| `health_check` | None |
-| `create_contact` | `espocrm:contacts:write` |
-| `search_contacts`, `get_contact` | `espocrm:contacts:read` |
-| `create_account` | `espocrm:accounts:write` |
-| `search_accounts` | `espocrm:accounts:read` |
-| `create_lead` | `espocrm:leads:write` |
-| `search_leads` | `espocrm:leads:read` |
-| `search_entity`, `get_entity` | `espocrm:entities:read` |
-
-If the required scope is missing, the operation will be denied.
-
 ## API Reference
 
 ### MCP Tools
@@ -832,38 +771,6 @@ get_entity(
 ) -> str
 ```
 
-## Development
-
-### Running in Development Mode
-
-Make sure your virtual environment is activated:
-
-```bash
-# On Linux/macOS:
-source venv/bin/activate
-
-# On Windows:
-# venv\Scripts\activate
-```
-
-Then run the server:
-
-```bash
-python -m src.server
-```
-
-### Code Formatting
-
-```bash
-ruff format src/
-```
-
-### Linting
-
-```bash
-ruff check src/
-```
-
 ## Future Enhancements
 
 Future versions may include:
@@ -877,11 +784,6 @@ Future versions may include:
 - Caching for improved performance
 - FGA tuple synchronization with EspoCRM data changes
 - Admin UI for managing FGA permissions
-
-## Documentation
-
-- [FGA Integration Guide](FGA_INTEGRATION.md) - Detailed FGA setup and usage
-- [FGA Implementation Summary](FGA_IMPLEMENTATION_SUMMARY.md) - Technical implementation details
 
 ## License
 
