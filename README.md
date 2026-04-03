@@ -435,7 +435,7 @@ When using the MCP server with AI assistants, you need:
 
 Here are practical examples of using the MCP server through Claude or CherryStudio with natural language:
 
-### 1. Health Check (No Authentication Required)
+### 1. Health Check
 
 **User**: "Check EspoCRM connection status"
 
