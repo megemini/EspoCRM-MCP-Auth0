@@ -291,7 +291,23 @@ Advantages:
    
    This will create the authorization model and sample data. Add the returned model ID to your `.env` file.
 
-7. **Run the server**
+7. **(Optional) Initialize Demo Data**
+
+   Create sample entities in EspoCRM with matching FGA permissions for testing:
+
+   ```bash
+   python scripts/demo_init.py "<your-auth0-user-sub>"
+   ```
+
+   The `auth0_user_sub` is your Auth0 user ID (e.g., `auth0|6abc123def456`), which you can find in **Auth0 Dashboard → User Management → Users → User ID**.
+
+   This script will:
+   - Create sample Accounts, Contacts, and Leads in EspoCRM
+   - Write FGA tuples granting your Auth0 user owner permissions on these entities
+
+   > **Note**: Requires EspoCRM to be running and the API user to have create permissions. If FGA is not configured, only EspoCRM entities will be created.
+
+8. **Run the server**
    ```bash
    python -m src.server
    ```
@@ -318,15 +334,26 @@ Advantages:
 
 ### EspoCRM Setup
 
-1. **API Key Authentication** (simpler):
-   - Generate an API key in EspoCRM
-   - Set `ESPOCRM_AUTH_METHOD=apikey`
-   - Set `ESPOCRM_API_KEY` to your API key
+1. **Create a Role for API access**:
+   - Go to EspoCRM **Administration** → **Roles** → **Create Role**
+   - Set a name (e.g., `API Full Access`)
+   - Grant **read**, **create**, **edit**, **delete** permissions for the entity types you need (Account, Contact, Lead, etc.)
+   - Save the Role
 
-2. **HMAC Authentication** (more secure):
-   - Generate an API key and secret key in EspoCRM
+2. **Create an API User**:
+   - Go to **Administration** → **API Users** → **Create API User**
+   - Assign the Role created in step 1
+   - Choose authentication method:
+
+   **API Key Authentication** (simpler):
+   - Set `ESPOCRM_AUTH_METHOD=apikey`
+   - Set `ESPOCRM_API_KEY` to the generated API key
+
+   **HMAC Authentication** (more secure):
    - Set `ESPOCRM_AUTH_METHOD=hmac`
    - Set both `ESPOCRM_API_KEY` and `ESPOCRM_SECRET_KEY`
+
+   > **Note**: If the API user has no Role assigned, all API requests will return `403 Forbidden`.
 
 ### FGA Setup (Optional)
 
