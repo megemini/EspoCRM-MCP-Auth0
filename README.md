@@ -2,6 +2,8 @@
 
 A Model Context Protocol (MCP) server for EspoCRM with Auth0 authentication and authorization.
 
+![Demo](docs/demo.gif)
+
 ## Overview
 
 This project provides an MCP server that integrates with EspoCRM, allowing AI assistants and other MCP clients to interact with EspoCRM data through a standardized interface. The server includes:
