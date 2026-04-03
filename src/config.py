@@ -32,6 +32,15 @@ class FGAConfig:
 
 
 @dataclass(frozen=True)
+class OAuthConfig:
+    """OAuth configuration for dynamic token acquisition via Auth0 Universal Login."""
+    client_id: str
+    client_secret: str
+    secret_key: str
+    enabled: bool = True
+
+
+@dataclass(frozen=True)
 class Config:
     """Application configuration."""
     auth0_domain: str
@@ -39,6 +48,7 @@ class Config:
     mcp_server_url: str
     espocrm: EspoCRMConfig
     fga: Optional[FGAConfig] = None
+    oauth: Optional[OAuthConfig] = None
     port: int = 3001
     debug: bool = True
     cors_origins: List[str] = field(default_factory=lambda: ["*"])
@@ -97,12 +107,35 @@ class Config:
                 enabled=True,
             )
 
+        # Load OAuth configuration (optional - for dynamic token acquisition)
+        oauth_config = None
+        oauth_enabled = os.getenv("OAUTH_ENABLED", "false").lower() == "true"
+        
+        if oauth_enabled:
+            oauth_client_id = os.getenv("OAUTH_CLIENT_ID")
+            oauth_client_secret = os.getenv("OAUTH_CLIENT_SECRET")
+            oauth_secret_key = os.getenv("OAUTH_SECRET_KEY")
+            
+            if not all([oauth_client_id, oauth_client_secret, oauth_secret_key]):
+                raise ValueError(
+                    "OAuth is enabled but missing required configuration. "
+                    "Please set OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, and OAUTH_SECRET_KEY"
+                )
+            
+            oauth_config = OAuthConfig(
+                client_id=oauth_client_id,
+                client_secret=oauth_client_secret,
+                secret_key=oauth_secret_key,
+                enabled=True,
+            )
+
         return cls(
             auth0_domain=auth0_domain,
             auth0_audience=auth0_audience,
             mcp_server_url=os.getenv("MCP_SERVER_URL", "http://localhost:3001"),
             espocrm=espocrm_config,
             fga=fga_config,
+            oauth=oauth_config,
             port=int(os.getenv("PORT", "3001")),
             debug=os.getenv("DEBUG", "false").lower() == "true",
             cors_origins=os.getenv("CORS_ORIGINS", "*").split(","),

@@ -48,6 +48,7 @@ class Auth0Mcp:
         self.mcp = FastMCP(
             name=self.name,
             stateless_http=True,
+            streamable_http_path="/",
         )
         self._scopes_supported = {
             "openid",

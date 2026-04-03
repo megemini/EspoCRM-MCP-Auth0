@@ -60,7 +60,7 @@ class Auth0Middleware(BaseHTTPMiddleware):
         # Extract Authorization header
         auth_header = request.headers.get("authorization")
         if not auth_header:
-            raise MalformedAuthorizationRequest("Missing Authorization header")
+            raise AuthenticationRequired("Missing Authorization header")
         if not auth_header.lower().startswith("bearer "):
             raise MalformedAuthorizationRequest("Invalid Authorization header format")
 

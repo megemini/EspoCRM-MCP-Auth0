@@ -11,6 +11,7 @@ from starlette.routing import Mount, Route
 
 from .auth0 import Auth0Mcp
 from .auth0.fga import FGAClient, set_fga_client
+from .auth0.oauth import OAuthManager
 from .config import get_config
 from .espocrm import EspoCRMClient
 from .tools import register_tools, set_espocrm_client
@@ -52,6 +53,23 @@ if config.fga and config.fga.enabled:
         logger.warning(f"Failed to initialize FGA client: {e}")
         logger.warning("Continuing without FGA - using scope-based authorization only")
 
+# Initialize OAuth manager (if configured)
+oauth_manager = None
+if config.oauth and config.oauth.enabled:
+    try:
+        oauth_manager = OAuthManager(
+            auth0_domain=config.auth0_domain,
+            auth0_client_id=config.oauth.client_id,
+            auth0_client_secret=config.oauth.client_secret,
+            auth0_audience=config.auth0_audience,
+            mcp_server_url=config.mcp_server_url,
+            secret_key=config.oauth.secret_key,
+        )
+        logger.info("OAuth manager initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize OAuth manager: {e}")
+        logger.warning("Continuing without OAuth - manual token required")
+
 # Register MCP tools
 register_tools(auth0_mcp)
 
@@ -69,6 +87,10 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             logger.info("FGA: Enabled")
         else:
             logger.info("FGA: Disabled (using scope-based authorization)")
+        if oauth_manager:
+            logger.info("OAuth: Enabled (dynamic token acquisition via Auth0 Universal Login)")
+        else:
+            logger.info("OAuth: Disabled (manual token required)")
         yield
         # Cleanup
         await espocrm_client.close()
@@ -77,20 +99,34 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         logger.info("EspoCRM MCP Server shut down")
 
 
+# Build routes
+routes = [
+    # Discovery metadata route (specific path, won't shadow /mcp)
+    Mount("/.well-known", app=auth0_mcp.well_known_app()),
+]
+
+# Add OAuth routes if enabled
+if oauth_manager:
+    routes.extend([
+        Route("/auth/login", endpoint=oauth_manager.login, methods=["GET"]),
+        Route("/auth/callback", endpoint=oauth_manager.callback, methods=["GET"]),
+        Route("/auth/token", endpoint=oauth_manager.get_token, methods=["GET"]),
+        Route("/auth/logout", endpoint=oauth_manager.logout, methods=["GET"]),
+    ])
+
+# Add main MCP app route
+routes.append(
+    Mount(
+        "/",
+        app=auth0_mcp.mcp.streamable_http_app(),
+        middleware=auth0_mcp.auth_middleware()
+    )
+)
+
 # Create Starlette application
 starlette_app = Starlette(
     debug=config.debug,
-    routes=[
-        # Discovery metadata route (specific path, won't shadow /mcp)
-        Mount("/.well-known", app=auth0_mcp.well_known_app()),
-
-        # Main MCP app route with authentication middleware
-        Mount(
-            "/",
-            app=auth0_mcp.mcp.streamable_http_app(),
-            middleware=auth0_mcp.auth_middleware()
-        ),
-    ],
+    routes=routes,
     lifespan=lifespan,
     exception_handlers=auth0_mcp.exception_handlers(),
 )

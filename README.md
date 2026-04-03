@@ -258,6 +258,12 @@ Advantages:
    DEBUG=true
    CORS_ORIGINS=*
 
+   # OAuth Configuration (Optional - for dynamic token acquisition via Auth0 Universal Login)
+   OAUTH_ENABLED=false
+   OAUTH_CLIENT_ID=your-auth0-application-client-id
+   OAUTH_CLIENT_SECRET=your-auth0-application-client-secret
+   OAUTH_SECRET_KEY=your-random-secret-key-for-session-encryption
+
    # FGA Configuration (Optional - for fine-grained authorization)
    FGA_ENABLED=false
    FGA_API_URL=https://api.us1.fga.dev
@@ -269,7 +275,11 @@ Advantages:
    FGA_AUTHORIZATION_MODEL_ID=your-authorization-model-id
    ```
 
-5. **(Optional) Initialize FGA**
+5. **(Optional) Configure OAuth for Dynamic Token Acquisition**
+
+   Enable OAuth if you want MCP clients (e.g., CherryStudio) to authenticate interactively via Auth0 Universal Login. See [OAuth Setup](#oauth-setup-optional) for detailed instructions.
+
+6. **(Optional) Initialize FGA**
    
    If you want to use fine-grained authorization:
    
@@ -281,7 +291,7 @@ Advantages:
    
    This will create the authorization model and sample data. Add the returned model ID to your `.env` file.
 
-6. **Run the server**
+7. **Run the server**
    ```bash
    python -m src.server
    ```
@@ -351,6 +361,340 @@ Fine-Grained Authorization provides entity-level access control. To enable FGA:
    - The initialization script can be run multiple times safely (handles duplicates)
 
 For detailed FGA documentation, see [FGA_INTEGRATION.md](FGA_INTEGRATION.md).
+
+### OAuth Setup (Optional)
+
+OAuth enables dynamic token acquisition via Auth0 Universal Login, allowing MCP clients to authenticate interactively without manually managing tokens.
+
+1. **Create Auth0 Application**:
+   - Go to Auth0 Dashboard → Applications → Create Application
+   - Choose "Regular Web Application"
+   - Note the Client ID and Client Secret
+
+2. **Configure Callback URLs** (in the application's Settings tab):
+   - Add `http://localhost:3001/auth/callback` to Allowed Callback URLs
+   - Add `http://localhost:3001` to Allowed Web Origins
+   - Add `http://localhost:3001` to Allowed Logout URLs
+
+3. **Configure API**:
+   - Ensure your API is configured with the correct scopes
+   - The API identifier should match `AUTH0_AUDIENCE`
+
+4. **Generate `OAUTH_SECRET_KEY`**:
+   ```bash
+   python -c "import secrets; print(secrets.token_urlsafe(32))"
+   ```
+
+5. **Update `.env`**:
+   ```env
+   OAUTH_ENABLED=true
+   OAUTH_CLIENT_ID=<your-auth0-app-client-id>
+   OAUTH_CLIENT_SECRET=<your-auth0-app-client-secret>
+   OAUTH_SECRET_KEY=<generated-secret-from-step-4>
+   ```
+
+## Integration with AI Assistants
+
+This MCP server can be integrated with AI assistants like Claude Desktop or CherryStudio to enable natural language interaction with EspoCRM data.
+
+### Integration with CherryStudio
+
+1. **Start the MCP server**:
+   ```bash
+   cd EspoCRM-MCP-Auth0/EspoCRM-MCP-Auth0
+   source venv/bin/activate
+   python -m src.server
+   ```
+
+2. **Configure CherryStudio**:
+   - **Server Type**: Streamable HTTP
+   - **Server URL**: `http://localhost:3001`
+   - No Bearer Token needed
+
+3. **Authentication Flow** (automatic):
+   - CherryStudio sends a request → server returns 401 with OAuth metadata
+   - CherryStudio discovers Auth0 via `/.well-known/oauth-protected-resource`
+   - Browser opens Auth0 Universal Login Page for user authentication
+   - After login, CherryStudio receives the access token automatically
+   - Token is included in all subsequent MCP requests
+
+### Authentication Requirements
+
+When using the MCP server with AI assistants, you need:
+
+1. **Auth0 Access Token**: Obtain a valid Auth0 access token with appropriate scopes
+2. **Required Scopes**:
+   - `espocrm:contacts:read` / `espocrm:contacts:write`
+   - `espocrm:accounts:read` / `espocrm:accounts:write`
+   - `espocrm:leads:read` / `espocrm:leads:write`
+   - `espocrm:entities:read`
+
+3. **Token Usage**: Configure your MCP client to include the Auth0 token in the Authorization header
+
+## Usage Examples
+
+Here are practical examples of using the MCP server through Claude or CherryStudio with natural language:
+
+### 1. Health Check (No Authentication Required)
+
+**User**: "Check EspoCRM connection status"
+
+**AI Assistant invokes**: `health_check()`
+
+**Result**:
+```json
+{
+  "status": "healthy",
+  "user": "admin",
+  "version": "7.5.0"
+}
+```
+
+### 2. Creating a Contact
+
+**User**: "Create a new contact in EspoCRM:
+- Name: John Smith
+- Email: john.smith@example.com
+- Phone: +1-555-0100
+- Title: Sales Manager"
+
+**AI Assistant invokes**:
+```python
+create_contact(
+    first_name="John",
+    last_name="Smith",
+    email_address="john.smith@example.com",
+    phone_number="+1-555-0100",
+    title="Sales Manager"
+)
+```
+
+**Result**: `Successfully created contact: John Smith (ID: 123abc)`
+
+### 3. Searching Contacts
+
+**User**: "Find all contacts with last name 'Smith'"
+
+**AI Assistant invokes**:
+```python
+search_contacts(search_term="Smith")
+```
+
+**Result**:
+```
+Found 3 contacts:
+  - ID: 123abc, Name: John Smith
+  - ID: 456def, Name: Jane Smith
+  - ID: 789ghi, Name: Bob Smith
+```
+
+### 4. Getting Contact Details
+
+**User**: "Get detailed information for contact ID 123abc"
+
+**AI Assistant invokes**:
+```python
+get_contact(contact_id="123abc")
+```
+
+**Result**:
+```json
+{
+  "id": "123abc",
+  "firstName": "John",
+  "lastName": "Smith",
+  "emailAddress": "john.smith@example.com",
+  "phoneNumber": "+1-555-0100",
+  "title": "Sales Manager",
+  "accountId": "acc123",
+  "accountName": "ABC Corporation",
+  "createdAt": "2024-01-15 10:30:00",
+  "modifiedAt": "2024-01-15 10:30:00"
+}
+```
+
+### 5. Creating an Account
+
+**User**: "Create a new company:
+- Name: Tech Solutions Inc.
+- Type: Customer
+- Industry: Information Technology
+- Website: https://techsolutions.com
+- Email: info@techsolutions.com"
+
+**AI Assistant invokes**:
+```python
+create_account(
+    name="Tech Solutions Inc.",
+    account_type="Customer",
+    industry="Information Technology",
+    website="https://techsolutions.com",
+    email_address="info@techsolutions.com"
+)
+```
+
+**Result**: `Successfully created account: Tech Solutions Inc. (ID: acc456)`
+
+### 6. Searching Accounts
+
+**User**: "Find all companies in the Information Technology industry"
+
+**AI Assistant invokes**:
+```python
+search_accounts(industry="Information Technology")
+```
+
+**Result**:
+```
+Found 2 accounts:
+  - ID: acc456, Name: Tech Solutions Inc.
+  - ID: acc789, Name: Data Systems Corp.
+```
+
+### 7. Creating a Lead
+
+**User**: "Create a new sales lead:
+- Name: Alice Johnson
+- Source: Website
+- Email: alice.johnson@example.com
+- Company: Tech Solutions Inc.
+- Status: New
+- Notes: Submitted through website contact form"
+
+**AI Assistant invokes**:
+```python
+create_lead(
+    first_name="Alice",
+    last_name="Johnson",
+    source="Website",
+    email_address="alice.johnson@example.com",
+    account_name="Tech Solutions Inc.",
+    status="New",
+    description="Submitted through website contact form"
+)
+```
+
+**Result**: `Successfully created lead: Alice Johnson (ID: lead789)`
+
+### 8. Searching Leads
+
+**User**: "Show me all new leads from the website"
+
+**AI Assistant invokes**:
+```python
+search_leads(source="Website", status="New")
+```
+
+**Result**:
+```
+Found 5 leads:
+  - ID: lead789, Name: Alice Johnson
+  - ID: lead101, Name: Bob Williams
+  - ID: lead102, Name: Carol Davis
+  - ID: lead103, Name: David Brown
+  - ID: lead104, Name: Eve Wilson
+```
+
+### 9. Generic Entity Search
+
+**User**: "Search for opportunities with 'Tech' in the name"
+
+**AI Assistant invokes**:
+```python
+search_entity(
+    entity_type="Opportunity",
+    filters={"name": "Tech"},
+    select=["id", "name", "amount", "stage", "probability"],
+    limit=10
+)
+```
+
+**Result**:
+```
+Found 2 Opportunity:
+  - ID: opp123, Name: Tech Project Deal
+  - ID: opp456, Name: Tech Renewal Opportunity
+```
+
+### 10. Getting Any Entity Details
+
+**User**: "Get opportunity opp123 details, show only name, amount, and stage"
+
+**AI Assistant invokes**:
+```python
+get_entity(
+    entity_type="Opportunity",
+    entity_id="opp123",
+    select=["name", "amount", "stage"]
+)
+```
+
+**Result**:
+```json
+{
+  "id": "opp123",
+  "name": "Tech Project Deal",
+  "amount": 50000,
+  "stage": "Negotiation"
+}
+```
+
+### Real-World Workflow Examples
+
+#### Scenario 1: Customer Onboarding
+
+**User**: "A new customer wants to sign up:
+- Company: StartupXYZ
+- Contact: Sarah Lee, email sarah@startupxyz.com
+Please create both the company and contact"
+
+**AI Assistant workflow**:
+1. Creates account: `create_account(name="StartupXYZ", ...)`
+2. Gets the returned `account_id`
+3. Creates contact: `create_contact(first_name="Sarah", last_name="Lee", email_address="sarah@startupxyz.com", account_id=account_id)`
+
+#### Scenario 2: Lead Management
+
+**User**: "Show me all new leads from the website and tell me how many we have"
+
+**AI Assistant workflow**:
+1. Searches leads: `search_leads(source="Website", status="New")`
+2. Analyzes the results
+3. Reports: "You have 5 new leads from the website"
+
+### Current Limitations
+
+**Supported Operations**:
+- ✅ Create contacts, accounts, and leads
+- ✅ Search contacts, accounts, and leads
+- ✅ View entity details
+- ✅ Generic entity search and retrieval
+
+**Not Yet Supported**:
+- ❌ Update entities
+- ❌ Delete entities
+- ❌ Create/manage opportunities
+- ❌ Create/manage tasks
+- ❌ Create/manage meetings
+- ❌ Bulk operations
+- ❌ Relationship management
+
+### Permission Requirements
+
+Each operation requires specific Auth0 scopes:
+
+| Tool | Required Scope |
+|------|----------------|
+| `health_check` | None |
+| `create_contact` | `espocrm:contacts:write` |
+| `search_contacts`, `get_contact` | `espocrm:contacts:read` |
+| `create_account` | `espocrm:accounts:write` |
+| `search_accounts` | `espocrm:accounts:read` |
+| `create_lead` | `espocrm:leads:write` |
+| `search_leads` | `espocrm:leads:read` |
+| `search_entity`, `get_entity` | `espocrm:entities:read` |
+
+If the required scope is missing, the operation will be denied.
 
 ## API Reference
 
@@ -457,31 +801,6 @@ get_entity(
     entity_id: str,
     select: list[str] | None = None
 ) -> str
-```
-
-## Architecture
-
-```
-src/
-├── __init__.py              # Package initialization
-├── config.py                # Configuration management
-├── server.py                # Main server application
-├── tools.py                 # MCP tool definitions
-├── auth0/                   # Auth0 integration
-│   ├── __init__.py          # Auth0 MCP wrapper
-│   ├── authz.py             # Authorization decorators (scopes + FGA)
-│   ├── errors.py            # Error classes
-│   ├── fga.py               # FGA client wrapper
-│   └── middleware.py        # Authentication middleware
-└── espocrm/                 # EspoCRM client
-    ├── __init__.py          # Client exports
-    ├── client.py            # API client implementation
-    └── types.py             # Type definitions
-
-scripts/
-└── fga_init.py              # FGA initialization script
-
-schema.fga                    # FGA authorization model definition
 ```
 
 ## Development
