@@ -60,21 +60,38 @@ class Auth0Mcp:
         Returns a router that serves the OAuth Protected Resource Metadata
         at the standard endpoint: /.well-known/oauth-protected-resource
         """
-        routes: list[Route] = create_protected_resource_routes(
+        return Router(routes=self._metadata_routes(), middleware=[Middleware(self._NoCacheMiddleware)])
+
+    def well_known_app(self) -> Router:
+        """
+        Returns a router for mounting at /.well-known, with route paths
+        adjusted to strip the /.well-known prefix.
+        """
+        routes = self._metadata_routes()
+        # Strip /.well-known prefix since this router will be mounted at /.well-known
+        adjusted_routes = []
+        for route in routes:
+            path = route.path
+            if path.startswith("/.well-known"):
+                path = path[len("/.well-known"):] or "/"
+            adjusted_routes.append(
+                Route(path, endpoint=route.endpoint, methods=list(route.methods) if route.methods else None)
+            )
+        return Router(routes=adjusted_routes, middleware=[Middleware(self._NoCacheMiddleware)])
+
+    def _metadata_routes(self) -> list[Route]:
+        return create_protected_resource_routes(
             resource_url=self.audience,
             authorization_servers=[f"https://{self.domain}"],
             scopes_supported=list(self._scopes_supported),
             resource_name=self.name,
         )
 
-        # Middleware to override cache headers
-        class NoCacheMiddleware(BaseHTTPMiddleware):
-            async def dispatch(self, request: Request, call_next: Callable) -> Response:
-                response = await call_next(request)
-                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-                return response
-
-        return Router(routes=routes, middleware=[Middleware(NoCacheMiddleware)])
+    class _NoCacheMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next: Callable) -> Response:  # type: ignore[override]
+            response = await call_next(request)
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            return response
 
     def auth_middleware(self) -> list[Middleware]:
         return [Middleware(Auth0Middleware, domain=self.domain, audience=self.audience)]

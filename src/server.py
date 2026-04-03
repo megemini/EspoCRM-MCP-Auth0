@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
-from starlette.routing import Mount
+from starlette.routing import Mount, Route
 
 from .auth0 import Auth0Mcp
 from .auth0.fga import FGAClient, set_fga_client
@@ -81,8 +81,8 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 starlette_app = Starlette(
     debug=config.debug,
     routes=[
-        # Add discovery metadata route
-        Mount("/", app=auth0_mcp.auth_metadata_router()),
+        # Discovery metadata route (specific path, won't shadow /mcp)
+        Mount("/.well-known", app=auth0_mcp.well_known_app()),
 
         # Main MCP app route with authentication middleware
         Mount(
