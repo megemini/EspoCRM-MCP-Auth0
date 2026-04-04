@@ -72,7 +72,23 @@ class OAuthManager:
             "espocrm:accounts:write",
             "espocrm:leads:read",
             "espocrm:leads:write",
+            "espocrm:opportunities:read",
+            "espocrm:opportunities:write",
+            "espocrm:meetings:read",
+            "espocrm:meetings:write",
+            "espocrm:tasks:read",
+            "espocrm:tasks:write",
+            "espocrm:calls:read",
+            "espocrm:calls:write",
+            "espocrm:cases:read",
+            "espocrm:cases:write",
+            "espocrm:notes:read",
+            "espocrm:notes:write",
+            "espocrm:users:read",
+            "espocrm:teams:read",
+            "espocrm:teams:write",
             "espocrm:entities:read",
+            "espocrm:entities:write",
         ]
 
         # Initialize OAuth client with Auth0

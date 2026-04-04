@@ -185,6 +185,21 @@ class EspoCRMClient:
             logger.error(f"Connection test failed: {str(e)}")
             return {"success": False, "error": str(e)}
 
+    async def get_related(
+        self,
+        entity: str,
+        entity_id: str,
+        link: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> EspoCRMResponse:
+        """Get related entities for a given entity link."""
+        data = await self._request(
+            "GET",
+            f"{entity}/{entity_id}/{link}",
+            params=params,
+        )
+        return EspoCRMResponse(**data)
+
     async def close(self):
         """Close the HTTP client."""
         await self.client.aclose()

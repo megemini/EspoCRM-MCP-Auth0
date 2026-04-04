@@ -12,31 +12,14 @@ This project provides an MCP server that integrates with EspoCRM, allowing AI as
 - **Scope-based Authorization**: Coarse-grained access control using OAuth scopes
 - **FGA Fine-Grained Authorization** (Optional): Entity-level, relationship-based access control using OpenFGA
 - **EspoCRM Integration**: Full API client for EspoCRM with support for both API key and HMAC authentication
-- **Basic MCP Tools**: Essential tools for managing contacts, accounts, leads, and other entities
+- **Comprehensive MCP Tools**: Full-featured tools for managing contacts, accounts, leads, opportunities, meetings, tasks, calls, cases, notes, users, teams, and generic entity operations
 
 ## Features
 
 ### Implemented Tools
 
-1. **Health Check**
-   - `health_check`: Verify EspoCRM connection status
-
-2. **Contact Management**
-   - `create_contact`: Create new contacts
-   - `search_contacts`: Search contacts with filters
-   - `get_contact`: Get detailed contact information
-
-3. **Account Management**
-   - `create_account`: Create new accounts/companies
-   - `search_accounts`: Search accounts with filters
-
-4. **Lead Management**
-   - `create_lead`: Create new leads
-   - `search_leads`: Search leads with filters
-
-5. **Generic Entity Operations**
-   - `search_entity`: Search any entity type
-   - `get_entity`: Get any entity by ID
+This project provides MCP tools across more than 10 categories for comprehensive EspoCRM management.
+See [**Full Tool Reference**](#full-tool-reference) below for the complete list with descriptions and scope requirements.
 
 ### Authentication & Authorization
 
@@ -44,29 +27,32 @@ All tools (except `health_check`) require valid Auth0 authentication with approp
 - `espocrm:contacts:read` / `espocrm:contacts:write`
 - `espocrm:accounts:read` / `espocrm:accounts:write`
 - `espocrm:leads:read` / `espocrm:leads:write`
-- `espocrm:entities:read`
+- `espocrm:opportunities:read` / `espocrm:opportunities:write`
+- `espocrm:meetings:read` / `espocrm:meetings:write`
+- `espocrm:tasks:read` / `espocrm:tasks:write`
+- `espocrm:calls:read` / `espocrm:calls:write`
+- `espocrm:cases:read` / `espocrm:cases:write`
+- `espocrm:notes:read` / `espocrm:notes:write`
+- `espocrm:users:read`
+- `espocrm:teams:read` / `espocrm:teams:write`
+- `espocrm:entities:read` / `espocrm:entities:write`
 
 #### Fine-Grained Authorization (FGA)
 
-When FGA is enabled, additional entity-level permission checks are performed:
+When FGA is enabled, additional entity-level permission checks are performed for **20+ tools** across multiple entity types:
 
-- **Contact Access**:
-  - Owner: Full access (read, update, delete)
-  - Assigned user: Read and update access
-  - Team member: Read access
-  - Manager of assigned user: Full access
+- **Contact**: Owner (full), Assigned user (read/update), Team member (read), Manager (full)
+- **Account**: Owner (full), Assigned user (read/update), Team member (read)
+- **Lead**: Owner (full), Assigned user (read/update), Team member (read)
+- **Meeting**: Owner (full), Assigned user (read/update)
+- **Task**: Owner (full), Assigned user (read/update), Assignee (read)
+- **Case**: Owner (full), Assigned user (read/update)
+- **Opportunity**: Owner (full), Assigned user (read/update)
+- **Generic Entities** (`get_entity`, `update_entity`, `delete_entity`, `link_entities`, `unlink_entities`): Dynamic entity-type checks at runtime
 
-- **Account Access**:
-  - Owner: Full access
-  - Assigned user: Read and update access
-  - Team member: Read access
+> See the [Full Tool Reference](#full-tool-reference) FGA column for per-tool details.
 
-- **Lead Access**:
-  - Owner: Full access
-  - Assigned user: Read and update access
-  - Team member: Read access
-
-FGA provides defense-in-depth security by combining scope-based (coarse-grained) and entity-level (fine-grained) authorization.
+FGA provides defense-in-depth security by combining scope-based (coarse-grained) and entity-level (fine-grained) authorization. Permission rules are defined declaratively in `src/tools/fga_config.py` and applied automatically via decorators or runtime checks.
 
 ## Key Advantages
 
@@ -326,13 +312,18 @@ Advantages:
 1. Create an API in your Auth0 dashboard
 2. Set the API identifier as `AUTH0_AUDIENCE`
 3. Configure scopes for the API:
-   - `espocrm:contacts:read`
-   - `espocrm:contacts:write`
-   - `espocrm:accounts:read`
-   - `espocrm:accounts:write`
-   - `espocrm:leads:read`
-   - `espocrm:leads:write`
-   - `espocrm:entities:read`
+   - `espocrm:contacts:read` / `espocrm:contacts:write`
+   - `espocrm:accounts:read` / `espocrm:accounts:write`
+   - `espocrm:leads:read` / `espocrm:leads:write`
+   - `espocrm:opportunities:read` / `espocrm:opportunities:write`
+   - `espocrm:meetings:read` / `espocrm:meetings:write`
+   - `espocrm:tasks:read` / `espocrm:tasks:write`
+   - `espocrm:calls:read` / `espocrm:calls:write`
+   - `espocrm:cases:read` / `espocrm:cases:write`
+   - `espocrm:notes:read` / `espocrm:notes:write`
+   - `espocrm:users:read`
+   - `espocrm:teams:read` / `espocrm:teams:write`
+   - `espocrm:entities:read` / `espocrm:entities:write`
 
 ### EspoCRM Setup
 
@@ -383,8 +374,12 @@ Fine-Grained Authorization provides entity-level access control. To enable FGA:
 
    This creates the authorization model for EspoCRM entities and writes sample tuples. The script will output the authorization model ID - add this to your `.env` file as `FGA_AUTHORIZATION_MODEL_ID`.
 
+   > **Note**: The `fga_init.py` script defines FGA types for `contact`, `account`, and `lead` only (suitable for basic demos). The full toolset also uses FGA checks on `meeting`, `task`, `case`, and `opportunity` entities, plus dynamic entity types via generic tools. For production use, extend the authorization model in `fga_init.py` or your FGA console to include these additional type definitions. See `src/tools/fga_config.py` for the complete list of FGA rules.
+
 4. **How It Works**:
-   - FGA checks are performed automatically when tools are called
+   - FGA rules are defined declaratively in `src/tools/fga_config.py` (20+ rules for different tools)
+   - For static entity types: `@apply_fga("tool_name")` decorator applies the rule automatically
+   - For dynamic entity types (generic tools): runtime `check_fga_dynamic()` checks at call time
    - Both scope and FGA checks are applied (defense-in-depth)
    - If FGA is not configured, only scope-based authorization is used
    - The initialization script can be run multiple times safely (handles duplicates)
@@ -454,7 +449,15 @@ When using the MCP server with AI assistants, you need:
    - `espocrm:contacts:read` / `espocrm:contacts:write`
    - `espocrm:accounts:read` / `espocrm:accounts:write`
    - `espocrm:leads:read` / `espocrm:leads:write`
-   - `espocrm:entities:read`
+   - `espocrm:opportunities:read` / `espocrm:opportunities:write`
+   - `espocrm:meetings:read` / `espocrm:meetings:write`
+   - `espocrm:tasks:read` / `espocrm:tasks:write`
+   - `espocrm:calls:read` / `espocrm:calls:write`
+   - `espocrm:cases:read` / `espocrm:cases:write`
+   - `espocrm:notes:read` / `espocrm:notes:write`
+   - `espocrm:users:read`
+   - `espocrm:teams:read` / `espocrm:teams:write`
+   - `espocrm:entities:read` / `espocrm:entities:write`
 
 ## Usage Examples
 
@@ -664,15 +667,161 @@ get_entity(
 }
 ```
 
+### 11. Creating an Opportunity
+
+**User**: "Create a sales opportunity:
+- Name: Tech Solutions Platform License
+- Account: Tech Solutions Inc.
+- Stage: Qualification
+- Amount: $75,000
+- Close Date: 2025-06-30"
+
+**AI Assistant invokes**:
+```python
+create_opportunity(
+    name="Tech Solutions Platform License",
+    account_id="acc456",
+    stage="Qualification",
+    amount=75000,
+    close_date="2025-06-30"
+)
+```
+
+**Result**: `Successfully created opportunity: Tech Solutions Platform License (Qualification) (ID: opp789)`
+
+### 12. Creating a Meeting
+
+**User**: "Schedule a meeting with John Smith:
+- Topic: Q1 Product Demo
+- Date: 2025-04-15 10:00
+- End Time: 2025-04-15 11:00
+- Location: Conference Room A"
+
+**AI Assistant invokes**:
+```python
+create_meeting(
+    name="Q1 Product Demo",
+    date_start="2025-04-15T10:00:00Z",
+    date_end="2025-04-15T11:00:00Z",
+    location="Conference Room A",
+    contacts_ids=["123abc"]
+)
+```
+
+**Result**: `Successfully created meeting: Q1 Product Demo (Planned) (ID: meeting001)`
+
+### 13. Creating a Task
+
+**User**: "Create a follow-up task for Alice Johnson's lead:
+- Subject: Follow up on website inquiry
+- Due: 2025-04-20
+- Priority: High"
+
+**AI Assistant invokes**:
+```python
+create_task(
+    name="Follow up on website inquiry",
+    status="Not Started",
+    priority="High",
+    due_date="2025-04-20",
+    parent_type="Lead",
+    parent_id="lead789"
+)
+```
+
+**Result**: `Successfully created task: Follow up on website inquiry (High) (ID: task001)`
+
+### 14. Logging a Call
+
+**User**: "Log an outbound call with Bob Williams about the renewal:
+
+**AI Assistant invokes**:
+```python
+create_call(
+    name="Renewal Discussion - Bob Williams",
+    direction="Outbound",
+    status="Held",
+    description="Discussed annual contract renewal, interested in upgrading"
+)
+```
+
+**Result**: `Successfully logged call: Renewal Discussion - Bob Williams (Outbound) (ID: call001)`
+
+### 15. Creating a Support Case
+
+**User**: "Create a support case for Tech Solutions Inc:
+- Name: Integration issue with API v2
+- Type: Problem
+- Priority: High"
+
+**AI Assistant invokes**:
+```python
+create_case(
+    name="Integration issue with API v2",
+    case_type="Problem",
+    priority="High",
+    account_id="acc456",
+    description="Customer reports errors when using API v2 endpoints"
+)
+```
+
+**Result**: `Successfully created case: Integration issue with API v2 (High) (ID: case001)`
+
+### 16. Adding a Note
+
+**User**: "Add a note to contact John Smith: Discussed pricing options during call, sent proposal via email."
+
+**AI Assistant invokes**:
+```python
+add_note(
+    parent_type="Contact",
+    parent_id="123abc",
+    post="Discussed pricing options during call, sent proposal via email."
+)
+```
+
+**Result**: `Successfully added note to Contact 123abc (ID: note001)`
+
+### 17. Searching Users
+
+**User**: "Find active users named 'admin' in the system"
+
+**AI Assistant invokes**:
+```python
+search_users(search_term="admin", is_active=True)
+```
+
+**Result**:
+```
+Found 2 users:
+  - ID: user1, Name: admin (admin@example.com), Role: Administrator
+  - ID: user2, Name: Sarah Admin (sarah.admin@company.com), Role: Manager
+```
+
+### 18. Managing Teams
+
+**User**: "Add user user1 to team Sales Team"
+
+**AI Assistant invokes**:
+```python
+add_user_to_team(user_id="user1", team_id="team_sales")
+```
+
+**Result**: `Successfully added user user1 to team team_sales`
+
 ## API Reference
 
-### MCP Tools
+### System Tools
 
 #### Health Check
 ```python
 health_check() -> str
 ```
-Returns the connection status and EspoCRM version information.
+Returns the connection status and EspoCRM version information. No authentication required.
+
+---
+
+### Contact Management
 
 #### Create Contact
 ```python
@@ -683,24 +832,34 @@ create_contact(
     phone_number: str | None = None,
     account_id: str | None = None,
     title: str | None = None,
+    department: str | None = None,
     description: str | None = None
 ) -> str
 ```
+**Scope**: `espocrm:contacts:write`
 
 #### Search Contacts
 ```python
 search_contacts(
     search_term: str | None = None,
     email_address: str | None = None,
+    phone_number: str | None = None,
+    account_id: str | None = None,
     limit: int = 20,
     offset: int = 0
 ) -> str
 ```
+**Scope**: `espocrm:contacts:read`
 
 #### Get Contact
 ```python
 get_contact(contact_id: str) -> str
 ```
+**Scope**: `espocrm:contacts:read` + **FGA** (owner/assigned user/team member)
+
+---
+
+### Account Management
 
 #### Create Account
 ```python
@@ -714,6 +873,7 @@ create_account(
     description: str | None = None
 ) -> str
 ```
+**Scope**: `espocrm:accounts:write`
 
 #### Search Accounts
 ```python
@@ -725,6 +885,11 @@ search_accounts(
     offset: int = 0
 ) -> str
 ```
+**Scope**: `espocrm:accounts:read`
+
+---
+
+### Lead Management
 
 #### Create Lead
 ```python
@@ -735,10 +900,14 @@ create_lead(
     email_address: str | None = None,
     phone_number: str | None = None,
     account_name: str | None = None,
+    website: str | None = None,
+    industry: str | None = None,
+    assigned_user_id: str | None = None,
     status: str = "New",
     description: str | None = None
 ) -> str
 ```
+**Scope**: `espocrm:leads:write`
 
 #### Search Leads
 ```python
@@ -746,12 +915,346 @@ search_leads(
     name: str | None = None,
     status: str | None = None,
     source: str | None = None,
+    email_address: str | None = None,
+    account_name: str | None = None,
     limit: int = 20,
     offset: int = 0
 ) -> str
 ```
+**Scope**: `espocrm:leads:read`
 
-#### Search Entity (Generic)
+#### Update Lead
+```python
+update_lead(lead_id: str, **kwargs) -> str
+```
+**Scope**: `espocrm:leads:write` + **FGA** (owner/assigned user)
+
+---
+
+#### Convert Lead
+```python
+convert_lead(
+    lead_id: str,
+    create_account: bool = True,
+    create_contact: bool = True,
+    create_opportunity: bool = True,
+    opportunity_amount: float | None = None,
+    opportunity_stage: str = "Qualification"
+) -> str
+```
+**Scope**: `espocrm:leads:write` + **FGA** (owner)
+
+#### Assign Lead
+```python
+assign_lead(lead_id: str, user_id: str) -> str
+```
+**Scope**: `espocrm:leads:write`
+
+---
+
+### Opportunity Management
+
+#### Create Opportunity
+```python
+create_opportunity(
+    name: str,
+    account_id: str,
+    stage: str,
+    amount: float | None = None,
+    close_date: str | None = None,
+    probability: int | None = None,
+    description: str | None = None
+) -> str
+```
+**Scope**: `espocrm:opportunities:write`
+
+#### Search Opportunities
+```python
+search_opportunities(
+    name: str | None = None,
+    stage: str | None = None,
+    min_amount: float | None = None,
+    max_amount: float | None = None,
+    account_id: str | None = None,
+    limit: int = 20,
+    offset: int = 0
+) -> str
+```
+**Scope**: `espocrm:opportunities:read`
+
+---
+
+### Meeting Management
+
+#### Create Meeting
+```python
+create_meeting(
+    name: str,
+    date_start: str,
+    date_end: str,
+    location: str | None = None,
+    description: str | None = None,
+    status: str = "Planned",
+    parent_type: str | None = None,
+    parent_id: str | None = None,
+    contacts_ids: list[str] | None = None,
+    users_ids: list[str] | None = None
+) -> str
+```
+**Scope**: `espocrm:meetings:write`
+
+#### Search Meetings
+```python
+search_meetings(
+    date_from: str | None = None,
+    date_to: str | None = None,
+    status: str | None = None,
+    location: str | None = None,
+    limit: int = 20,
+    offset: int = 0
+) -> str
+```
+**Scope**: `espocrm:meetings:read`
+
+#### Get Meeting
+```python
+get_meeting(meeting_id: str) -> str
+```
+**Scope**: `espocrm:meetings:read` + **FGA** (owner/assigned user)
+
+#### Update Meeting
+```python
+update_meeting(meeting_id: str, **kwargs) -> str
+```
+**Scope**: `espocrm:meetings:write` + **FGA** (owner/assigned user)
+
+---
+
+### Task Management
+
+#### Create Task
+```python
+create_task(
+    name: str,
+    status: str = "Not Started",
+    priority: str = "Normal",
+    due_date: str | None = None,
+    parent_type: str | None = None,
+    parent_id: str | None = None,
+    assigned_user_id: str | None = None,
+    description: str | None = None
+) -> str
+```
+**Scope**: `espocrm:tasks:write`
+
+#### Search Tasks
+```python
+search_tasks(
+    name: str | None = None,
+    status: str | None = None,
+    priority: str | None = None,
+    assigned_user_id: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 20,
+    offset: int = 0
+) -> str
+```
+**Scope**: `espocrm:tasks:read`
+
+#### Get Task
+```python
+get_task(task_id: str) -> str
+```
+**Scope**: `espocrm:tasks:read` + **FGA** (owner/assigned user)
+
+#### Update Task
+```python
+update_task(task_id: str, **kwargs) -> str
+```
+**Scope**: `espocrm:tasks:write` + **FGA** (owner/assigned user)
+
+#### Assign Task
+```python
+assign_task(task_id: str, user_id: str) -> str
+```
+**Scope**: `espocrm:tasks:write` + **FGA** (owner)
+
+---
+
+### User Management
+
+#### Search Users
+```python
+search_users(
+    search_term: str | None = None,
+    is_active: bool | None = None,
+    user_type: str | None = None,
+    limit: int = 20,
+    offset: int = 0
+) -> str
+```
+**Scope**: `espocrm:users:read`
+
+#### Get User by Email
+```python
+get_user_by_email(email: str) -> str
+```
+**Scope**: `espocrm:users:read`
+
+---
+
+### Team & Role Management
+
+#### Add User to Team
+```python
+add_user_to_team(user_id: str, team_id: str, position: str | None = None) -> str
+```
+**Scope**: `espocrm:teams:write`
+
+#### Remove User from Team
+```python
+remove_user_from_team(user_id: str, team_id: str) -> str
+```
+**Scope**: `espocrm:teams:write`
+
+#### Assign Role to User
+```python
+assign_role_to_user(user_id: str, role_id: str) -> str
+```
+**Scope**: `espocrm:teams:write`
+
+#### Get User Teams
+```python
+get_user_teams(user_id: str) -> str
+```
+**Scope**: `espocrm:teams:read`
+
+#### Get Team Members
+```python
+get_team_members(team_id: str) -> str
+```
+**Scope**: `espocrm:teams:read`
+
+#### Search Teams
+```python
+search_teams(search_term: str | None = None, limit: int = 20) -> str
+```
+**Scope**: `espocrm:teams:read`
+
+#### Get User Permissions
+```python
+get_user_permissions(user_id: str) -> str
+```
+**Scope**: `espocrm:users:read`
+
+---
+
+### Communication - Call
+
+#### Create Call
+```python
+create_call(
+    name: str,
+    direction: str = "Outbound",
+    status: str = "Held",
+    duration: int | None = None,
+    parent_type: str | None = None,
+    parent_id: str | None = None,
+    description: str | None = None
+) -> str
+```
+**Scope**: `espocrm:calls:write`
+
+#### Search Calls
+```python
+search_calls(
+    date_from: str | None = None,
+    date_to: str | None = None,
+    direction: str | None = None,
+    status: str | None = None,
+    limit: int = 20,
+    offset: int = 0
+) -> str
+```
+**Scope**: `espocrm:calls:read`
+
+---
+
+### Communication - Case
+
+#### Create Case
+```python
+create_case(
+    name: str,
+    case_type: str | None = None,
+    priority: str = "Normal",
+    status: str = "New",
+    account_id: str | None = None,
+    contact_id: str | None = None,
+    description: str | None = None
+) -> str
+```
+**Scope**: `espocrm:cases:write`
+
+#### Search Cases
+```python
+search_cases(
+    name: str | None = None,
+    status: str | None = None,
+    priority: str | None = None,
+    case_type: str | None = None,
+    account_id: str | None = None,
+    limit: int = 20,
+    offset: int = 0
+) -> str
+```
+**Scope**: `espocrm:cases:read`
+
+#### Update Case
+```python
+update_case(case_id: str, **kwargs) -> str
+```
+**Scope**: `espocrm:cases:write` + **FGA** (owner/assigned user)
+
+---
+
+### Communication - Note
+
+#### Add Note
+```python
+add_note(
+    parent_type: str,
+    parent_id: str,
+    post: str,
+    attachments: list[dict] | None = None
+) -> str
+```
+**Scope**: `espocrm:notes:write`
+
+#### Search Notes
+```python
+search_notes(
+    parent_type: str | None = None,
+    parent_id: str | None = None,
+    search_term: str | None = None,
+    limit: int = 20,
+    offset: int = 0
+) -> str
+```
+**Scope**: `espocrm:notes:read`
+
+---
+
+### Generic Entity Operations
+
+#### Create Entity
+```python
+create_entity(entity_type: str, data: dict) -> str
+```
+**Scope**: `espocrm:entities:write`
+
+#### Search Entity
 ```python
 search_entity(
     entity_type: str,
@@ -761,29 +1264,189 @@ search_entity(
     offset: int = 0
 ) -> str
 ```
+**Scope**: `espocrm:entities:read`
 
-#### Get Entity (Generic)
+#### Get Entity
 ```python
-get_entity(
+get_entity(entity_type: str, entity_id: str, select: list[str] | None = None) -> str
+```
+**Scope**: `espocrm:entities:read` + **FGA** (dynamic)
+
+#### Update Entity
+```python
+update_entity(entity_type: str, entity_id: str, data: dict) -> str
+```
+**Scope**: `espocrm:entities:write` + **FGA** (dynamic)
+
+#### Delete Entity
+```python
+delete_entity(entity_type: str, entity_id: str) -> str
+```
+**Scope**: `espocrm:entities:delete` + **FGA** (dynamic)
+
+---
+
+### Relationship Management
+
+#### Link Entities
+```python
+link_entities(
     entity_type: str,
     entity_id: str,
-    select: list[str] | None = None
+    link_field: str,
+    related_ids: list[str]
 ) -> str
 ```
+**Scope**: `espocrm:entities:write` + **FGA** (dynamic)
+
+#### Unlink Entities
+```python
+unlink_entities(
+    entity_type: str,
+    entity_id: str,
+    link_field: str,
+    related_ids: list[str]
+) -> str
+```
+**Scope**: `espocrm:entities:write` + **FGA** (dynamic)
+
+#### Get Entity Relationships
+```python
+get_entity_relationships(
+    entity_type: str,
+    entity_id: str,
+    link_field: str,
+    where: dict | None = None,
+    select: list[str] | None = None,
+    limit: int = 20,
+    offset: int = 0
+) -> str
+```
+**Scope**: `espocrm:entities:read`
+
+## Full Tool Reference
+
+### Implemented Tools (46 tools)
+
+#### 1. System
+| Tool | Description | Auth Required |
+|------|-------------|---------------|
+| `health_check` | Verify EspoCRM connection status | No |
+
+#### 2. Contact Management (3)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_contact` | Create new contacts (with department support) | `contacts:write` | — |
+| `search_contacts` | Search contacts (name, email, phone, account) | `contacts:read` | — |
+| `get_contact` | Get detailed contact information | `contacts:read` | ✅ can_read |
+
+#### 3. Account Management (2)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_account` | Create new accounts/companies | `accounts:write` | — |
+| `search_accounts` | Search accounts with filters | `accounts:read` | — |
+
+#### 4. Lead Management (5)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_lead` | Create new leads (with website, industry, assigned user) | `leads:write` | — |
+| `search_leads` | Search leads (name, status, source, email, account) | `leads:read` | — |
+| `update_lead` | Update existing lead fields | `leads:write` | ✅ can_update |
+| `convert_lead` | Convert lead → Contact + Account + Opportunity | `leads:write` + `contacts:write` + `accounts:write` | ✅ can_write |
+| `assign_lead` | Assign/reassign lead to a user | `leads:write` | ✅ can_assign |
+
+#### 5. Opportunity Management (2)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_opportunity` | Create sales opportunity (stage, amount, probability) | `opportunities:write` | — |
+| `search_opportunities` | Search opportunities (stage, amount range, account) | `opportunities:read` | — |
+
+#### 6. Meeting Management (4)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_meeting` | Create meeting (with contacts/users linking) | `meetings:write` | — |
+| `search_meetings` | Search meetings (date range, status, location) | `meetings:read` | — |
+| `get_meeting` | Get detailed meeting information | `meetings:read` | ✅ can_read |
+| `update_meeting` | Update existing meeting | `meetings:write` | ✅ can_update |
+
+#### 7. Task Management (5)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_task` | Create task (with parent entity assignment) | `tasks:write` | — |
+| `search_tasks` | Search tasks (status, priority, due date, assignee) | `tasks:read` | — |
+| `get_task` | Get detailed task information | `tasks:read` | ✅ can_read |
+| `update_task` | Update existing task | `tasks:write` | ✅ can_update |
+| `assign_task` | Assign/reassign task to a user | `tasks:write` | ✅ can_assign |
+
+#### 8. User Management (2)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `search_users` | Search users (name, email, type, active status) | `users:read` | — |
+| `get_user_by_email` | Find user by email address | `users:read` | — |
+
+#### 9. Team & Role Management (7)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `add_user_to_team` | Add user to a team | `teams:write` | — |
+| `remove_user_from_team` | Remove user from a team | `teams:write` | — |
+| `assign_role_to_user` | Assign role to a user | `users:write` | — |
+| `get_user_teams` | Get all teams for a user | `teams:read` | — |
+| `get_team_members` | Get all members of a team | `teams:read` | — |
+| `search_teams` | Search teams by name/description | `teams:read` | — |
+| `get_user_permissions` | Get effective permissions for a user | `users:read` | — |
+
+#### 10. Communication - Call (2)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_call` | Log phone call (direction, participants) | `calls:write` | — |
+| `search_calls` | Search calls (date, direction, status) | `calls:read` | — |
+
+#### 11. Communication - Case (3)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_case` | Create support case/ticket | `cases:write` | — |
+| `search_cases` | Search cases (status, priority, type) | `cases:read` | — |
+| `update_case` | Update existing case | `cases:write` | ✅ can_update |
+
+#### 12. Communication - Note (2)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `add_note` | Add note/comment to any entity | `notes:write` | — |
+| `search_notes` | Search notes across entities | `notes:read` | — |
+
+#### 13. Generic Entity Operations (5)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `create_entity` | Create any entity type record | `entities:write` | — |
+| `search_entity` | Search any entity type | `entities:read` | — |
+| `get_entity` | Get any entity by ID | `entities:read` | ✅ dynamic |
+| `update_entity` | Update any entity record | `entities:write` | ✅ dynamic |
+| `delete_entity` | Delete any entity record | `entities:delete` | ✅ dynamic |
+
+#### 14. Relationship Management (3)
+| Tool | Description | Scope | FGA |
+|------|-------------|-------|-----|
+| `link_entities` | Link related entities together | `entities:write` | ✅ dynamic |
+| `unlink_entities` | Unlink related entities | `entities:write` | ✅ dynamic |
+| `get_entity_relationships` | Get related entities for a relationship | `entities:read` | — |
+
+> **FGA Column**: ✅ = Fine-Grained Authorization check applied; **dynamic** = entity type determined at runtime; — = no FGA check (scope-only authorization).
 
 ## Future Enhancements
 
 Future versions may include:
 
-- Additional entity types (Opportunities, Meetings, Tasks, etc.)
-- Update and delete operations
-- Relationship management tools
-- Bulk operations
-- Advanced search with complex filters
+- ~~Additional entity types (Opportunities, Meetings, Tasks, etc.)~~ ✅ Implemented
+- ~~Update and delete operations~~ ✅ Implemented
+- ~~Relationship management tools~~ ✅ Implemented
+- Bulk operations (batch create/update/delete)
+- Advanced search with complex filters and sorting
 - Webhook support for real-time updates
 - Caching for improved performance
 - FGA tuple synchronization with EspoCRM data changes
 - Admin UI for managing FGA permissions
+- Export/import functionality for entities
+- Custom field support in tool schemas
 
 ## License
 

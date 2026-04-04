@@ -62,6 +62,7 @@ repos:
       - id: bandit
         args: ["-c", "pyproject.toml"]
         additional_dependencies: ["bandit[toml]"]
+        exclude: ^tests/
 
   # Check for common Python security issues
   - repo: https://github.com/Lucas-C/pre-commit-hooks-safety

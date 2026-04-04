@@ -44,6 +44,8 @@ class Auth0Mcp:
         RuntimeError: If audience or domain are not provided
     """
 
+    mcp_class = FastMCP
+
     def __init__(
         self, name: str, audience: str, domain: str, mcp_server_url: str | None = None
     ):
