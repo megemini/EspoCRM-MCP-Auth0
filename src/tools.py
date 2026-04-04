@@ -9,7 +9,6 @@ from mcp.server.fastmcp import Context
 
 from .auth0 import Auth0Mcp
 from .auth0.authz import register_required_scopes, require_fga_permission, require_scopes
-from .auth0.fga import get_fga_client
 from .espocrm import EspoCRMClient, WhereClause
 
 logger = logging.getLogger(__name__)
@@ -44,39 +43,6 @@ def format_entity_list(entities: list[dict[str, Any]], entity_type: str) -> str:
             name = f"{name} {entity.get('lastName')}".strip()
         lines.append(f"  - ID: {entity_id}, Name: {name or 'N/A'}")
     return "\n".join(lines)
-
-
-async def check_fga_permission_if_enabled(
-    ctx: Context,
-    user_id: str,
-    object_type: str,
-    object_id: str,
-    relation: str,
-) -> None:
-    """
-    Check FGA permission if FGA is enabled.
-    If FGA is not configured, this is a no-op.
-    """
-    try:
-        fga_client = get_fga_client()
-        await fga_client.check_permission_or_raise(
-            user=user_id,
-            object_type=object_type,
-            object_id=object_id,
-            relation=relation,
-        )
-    except RuntimeError:
-        # FGA not configured, skip check
-        pass
-
-
-def get_user_id_from_context(ctx: Context) -> str:
-    """Extract user ID from authentication context."""
-    auth = getattr(ctx.request_context.request.state, "auth", {})
-    user_id = auth.get("extra", {}).get("sub")
-    if not user_id:
-        raise ValueError("User ID not found in authentication context")
-    return user_id
 
 
 def register_tools(auth0_mcp: Auth0Mcp) -> None:
@@ -195,15 +161,9 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         annotations={"readOnlyHint": True}
     )
     @require_scopes(["espocrm:contacts:read"])
+    @require_fga_permission(object_type="contact", object_id_param="contact_id", relation="can_read")
     async def get_contact(contact_id: str, ctx: Context | None = None) -> str:
         """Get detailed information about a specific contact."""
-        if ctx is None:
-            raise TypeError("ctx: Context is required")
-        
-        # Check FGA permission if enabled
-        user_id = get_user_id_from_context(ctx)
-        await check_fga_permission_if_enabled(ctx, user_id, "contact", contact_id, "can_read")
-        
         client = get_espocrm_client()
         contact = await client.get_by_id("Contact", contact_id)
         return json.dumps(contact, indent=2)
@@ -405,6 +365,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         annotations={"readOnlyHint": True}
     )
     @require_scopes(["espocrm:entities:read"])
+    @require_fga_permission(object_type="entity", object_id_param="entity_id", relation="can_read")
     async def get_entity(
         entity_type: str,
         entity_id: str,
@@ -412,14 +373,6 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         ctx: Context | None = None
     ) -> str:
         """Get a specific entity by ID."""
-        if ctx is None:
-            raise TypeError("ctx: Context is required")
-        
-        # Check FGA permission if enabled (for known entity types)
-        if entity_type.lower() in ["contact", "account", "lead", "opportunity", "meeting", "task"]:
-            user_id = get_user_id_from_context(ctx)
-            await check_fga_permission_if_enabled(ctx, user_id, entity_type.lower(), entity_id, "can_read")
-        
         client = get_espocrm_client()
         entity = await client.get_by_id(entity_type, entity_id, select)
         return json.dumps(entity, indent=2)

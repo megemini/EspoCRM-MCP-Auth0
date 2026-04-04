@@ -119,10 +119,15 @@ def require_fga_permission(
             if not object_id:
                 raise ValueError(f"Object ID parameter '{object_id_param}' not found")
 
-            # Check FGA permission
+            # Check FGA permission (skip if FGA not configured)
             from .fga import get_fga_client
 
-            fga_client = get_fga_client()
+            try:
+                fga_client = get_fga_client()
+            except RuntimeError:
+                # FGA not configured, skip check
+                return await func(*args, **kwargs)
+
             await fga_client.check_permission_or_raise(
                 user=user_id,
                 object_type=object_type,
@@ -193,10 +198,14 @@ def require_fga_permission_batch(
             if not object_ids:
                 raise ValueError(f"Object IDs parameter '{object_ids_param}' not found")
 
-            # Check FGA permission for all objects
+            # Check FGA permission for all objects (skip if FGA not configured)
             from .fga import get_fga_client
 
-            fga_client = get_fga_client()
+            try:
+                fga_client = get_fga_client()
+            except RuntimeError:
+                # FGA not configured, skip check
+                return await func(*args, **kwargs)
 
             for object_id in object_ids:
                 await fga_client.check_permission_or_raise(
