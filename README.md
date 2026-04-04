@@ -325,6 +325,8 @@ Advantages:
    - `espocrm:teams:read` / `espocrm:teams:write`
    - `espocrm:entities:read` / `espocrm:entities:write`
 
+![scopes](docs/scopes.png)
+
 ### EspoCRM Setup
 
 1. **Create a Role for API access**:
@@ -332,6 +334,8 @@ Advantages:
    - Set a name (e.g., `API Full Access`)
    - Grant **read**, **create**, **edit**, **delete** permissions for the entity types you need (Account, Contact, Lead, etc.)
    - Save the Role
+
+![roles](docs/espocrm_roles.png)
 
 2. **Create an API User**:
    - Go to **Administration** → **API Users** → **Create API User**
@@ -347,6 +351,8 @@ Advantages:
    - Set both `ESPOCRM_API_KEY` and `ESPOCRM_SECRET_KEY`
 
    > **Note**: If the API user has no Role assigned, all API requests will return `403 Forbidden`.
+
+![api](docs/espocrm_api.png)
 
 ### FGA Setup (Optional)
 
@@ -383,6 +389,10 @@ Fine-Grained Authorization provides entity-level access control. To enable FGA:
    - Both scope and FGA checks are applied (defense-in-depth)
    - If FGA is not configured, only scope-based authorization is used
    - The initialization script can be run multiple times safely (handles duplicates)
+
+![fga_model](docs/fga_model.png)
+
+![fga_tuple](docs/fga_tuple.png)
 
 ### OAuth Setup (Optional)
 
@@ -440,24 +450,7 @@ This MCP server can be integrated with AI assistants like Claude Desktop or Cher
    - After login, CherryStudio receives the access token automatically
    - Token is included in all subsequent MCP requests
 
-### Authentication Requirements
-
-When using the MCP server with AI assistants, you need:
-
-1. **Auth0 Access Token**: Obtain a valid Auth0 access token with appropriate scopes
-2. **Required Scopes**:
-   - `espocrm:contacts:read` / `espocrm:contacts:write`
-   - `espocrm:accounts:read` / `espocrm:accounts:write`
-   - `espocrm:leads:read` / `espocrm:leads:write`
-   - `espocrm:opportunities:read` / `espocrm:opportunities:write`
-   - `espocrm:meetings:read` / `espocrm:meetings:write`
-   - `espocrm:tasks:read` / `espocrm:tasks:write`
-   - `espocrm:calls:read` / `espocrm:calls:write`
-   - `espocrm:cases:read` / `espocrm:cases:write`
-   - `espocrm:notes:read` / `espocrm:notes:write`
-   - `espocrm:users:read`
-   - `espocrm:teams:read` / `espocrm:teams:write`
-   - `espocrm:entities:read` / `espocrm:entities:write`
+![cherrystudio](docs/cherrystudio.png)
 
 ## Usage Examples
 
