@@ -27,7 +27,9 @@ from src.config import EspoCRMConfig
 from src.espocrm import EspoCRMClient
 
 
-async def create_entity(client: EspoCRMClient, entity_type: str, data: dict, label: str) -> dict:
+async def create_entity(
+    client: EspoCRMClient, entity_type: str, data: dict, label: str
+) -> dict:
     """Create an entity, handling duplicates gracefully."""
     try:
         result = await client.post(entity_type, data)
@@ -43,52 +45,77 @@ async def create_espocrm_data(client: EspoCRMClient) -> dict[str, str]:
     ids = {}
 
     # Create accounts
-    account1 = await create_entity(client, "Account", {
-        "name": "Demo Corp",
-        "type": "Customer",
-        "industry": "Technology",
-        "website": "https://demo-corp.example.com",
-        "emailAddress": "info@demo-corp.example.com",
-    }, "Demo Corp")
+    account1 = await create_entity(
+        client,
+        "Account",
+        {
+            "name": "Demo Corp",
+            "type": "Customer",
+            "industry": "Technology",
+            "website": "https://demo-corp.example.com",
+            "emailAddress": "info@demo-corp.example.com",
+        },
+        "Demo Corp",
+    )
     ids["account1"] = account1["id"]
 
-    account2 = await create_entity(client, "Account", {
-        "name": "Acme Inc",
-        "type": "Partner",
-        "industry": "Consulting",
-        "website": "https://acme.example.com",
-    }, "Acme Inc")
+    account2 = await create_entity(
+        client,
+        "Account",
+        {
+            "name": "Acme Inc",
+            "type": "Partner",
+            "industry": "Consulting",
+            "website": "https://acme.example.com",
+        },
+        "Acme Inc",
+    )
     ids["account2"] = account2["id"]
 
     # Create contacts
-    contact1 = await create_entity(client, "Contact", {
-        "firstName": "Alice",
-        "lastName": "Johnson",
-        "emailAddress": "alice@demo-corp.example.com",
-        "phoneNumber": "+1-555-0101",
-        "accountId": ids["account1"],
-        "title": "CTO",
-    }, "Alice Johnson")
+    contact1 = await create_entity(
+        client,
+        "Contact",
+        {
+            "firstName": "Alice",
+            "lastName": "Johnson",
+            "emailAddress": "alice@demo-corp.example.com",
+            "phoneNumber": "+1-555-0101",
+            "accountId": ids["account1"],
+            "title": "CTO",
+        },
+        "Alice Johnson",
+    )
     ids["contact1"] = contact1["id"]
 
-    contact2 = await create_entity(client, "Contact", {
-        "firstName": "Bob",
-        "lastName": "Smith",
-        "emailAddress": "bob@acme.example.com",
-        "phoneNumber": "+1-555-0102",
-        "accountId": ids["account2"],
-        "title": "Sales Manager",
-    }, "Bob Smith")
+    contact2 = await create_entity(
+        client,
+        "Contact",
+        {
+            "firstName": "Bob",
+            "lastName": "Smith",
+            "emailAddress": "bob@acme.example.com",
+            "phoneNumber": "+1-555-0102",
+            "accountId": ids["account2"],
+            "title": "Sales Manager",
+        },
+        "Bob Smith",
+    )
     ids["contact2"] = contact2["id"]
 
     # Create leads
-    lead1 = await create_entity(client, "Lead", {
-        "firstName": "Charlie",
-        "lastName": "Brown",
-        "emailAddress": "charlie@startup.example.com",
-        "status": "New",
-        "accountName": "Startup Labs",
-    }, "Charlie Brown")
+    lead1 = await create_entity(
+        client,
+        "Lead",
+        {
+            "firstName": "Charlie",
+            "lastName": "Brown",
+            "emailAddress": "charlie@startup.example.com",
+            "status": "New",
+            "accountName": "Startup Labs",
+        },
+        "Charlie Brown",
+    )
     ids["lead1"] = lead1["id"]
 
     return ids
@@ -131,11 +158,31 @@ async def write_fga_tuples(user_sub: str, entity_ids: dict[str, str]) -> None:
 
     # Grant the demo user owner permission on all created entities
     tuples = [
-        ClientTuple(user=f"user:{user_sub}", relation="owner", object=f"account:{entity_ids['account1']}"),
-        ClientTuple(user=f"user:{user_sub}", relation="owner", object=f"account:{entity_ids['account2']}"),
-        ClientTuple(user=f"user:{user_sub}", relation="owner", object=f"contact:{entity_ids['contact1']}"),
-        ClientTuple(user=f"user:{user_sub}", relation="owner", object=f"contact:{entity_ids['contact2']}"),
-        ClientTuple(user=f"user:{user_sub}", relation="owner", object=f"lead:{entity_ids['lead1']}"),
+        ClientTuple(
+            user=f"user:{user_sub}",
+            relation="owner",
+            object=f"account:{entity_ids['account1']}",
+        ),
+        ClientTuple(
+            user=f"user:{user_sub}",
+            relation="owner",
+            object=f"account:{entity_ids['account2']}",
+        ),
+        ClientTuple(
+            user=f"user:{user_sub}",
+            relation="owner",
+            object=f"contact:{entity_ids['contact1']}",
+        ),
+        ClientTuple(
+            user=f"user:{user_sub}",
+            relation="owner",
+            object=f"contact:{entity_ids['contact2']}",
+        ),
+        ClientTuple(
+            user=f"user:{user_sub}",
+            relation="owner",
+            object=f"lead:{entity_ids['lead1']}",
+        ),
     ]
 
     async with OpenFgaClient(configuration) as fga_client:

@@ -1,4 +1,5 @@
 """EspoCRM client module."""
+
 from .client import EspoCRMClient
 from .types import EspoCRMResponse, WhereClause
 

@@ -1,14 +1,14 @@
 """Authorization decorators for MCP tools."""
+
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from functools import wraps
-from typing import Any
 
 from mcp.server.fastmcp import Context
 
 from . import Auth0Mcp
-from .errors import AuthenticationRequired, InsufficientPermission, InsufficientScope
+from .errors import AuthenticationRequired, InsufficientScope
 
 # Collect required scopes from all decorated functions
 _scopes_required: set[str] = set()
@@ -49,7 +49,9 @@ def require_scopes(required_scopes: Iterable[str]):
                 raise InsufficientScope(f"Missing required scopes: {missing_scopes}")
 
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -109,6 +111,7 @@ def require_fga_permission(
             if not object_id:
                 # Try to find in positional args by inspecting function signature
                 import inspect
+
                 sig = inspect.signature(func)
                 params = list(sig.parameters.keys())
                 if object_id_param in params:
@@ -188,6 +191,7 @@ def require_fga_permission_batch(
             object_ids = kwargs.get(object_ids_param)
             if not object_ids:
                 import inspect
+
                 sig = inspect.signature(func)
                 params = list(sig.parameters.keys())
                 if object_ids_param in params:

@@ -4,6 +4,7 @@ Auth0 integration for MCP server.
 This module provides Auth0 authentication and authorization for MCP servers,
 including token verification, middleware, and scoped tool decorators.
 """
+
 from __future__ import annotations
 
 import logging
@@ -17,7 +18,11 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route, Router
 
-from .errors import AuthenticationRequired, InsufficientScope, MalformedAuthorizationRequest
+from .errors import (
+    AuthenticationRequired,
+    InsufficientScope,
+    MalformedAuthorizationRequest,
+)
 from .middleware import Auth0Middleware
 
 logger = logging.getLogger(__name__)
@@ -38,7 +43,10 @@ class Auth0Mcp:
     Raises:
         RuntimeError: If audience or domain are not provided
     """
-    def __init__(self, name: str, audience: str, domain: str, mcp_server_url: str | None = None):
+
+    def __init__(
+        self, name: str, audience: str, domain: str, mcp_server_url: str | None = None
+    ):
         self.name = name
         self.audience = audience
         self.domain = domain
@@ -50,18 +58,17 @@ class Auth0Mcp:
             stateless_http=True,
             streamable_http_path="/",
         )
-        self._scopes_supported = {
-            "openid",
-            "profile",
-            "email"
-        }
+        self._scopes_supported = {"openid", "profile", "email"}
 
     def auth_metadata_router(self) -> Router:
         """
         Returns a router that serves the OAuth Protected Resource Metadata
         at the standard endpoint: /.well-known/oauth-protected-resource
         """
-        return Router(routes=self._metadata_routes(), middleware=[Middleware(self._NoCacheMiddleware)])
+        return Router(
+            routes=self._metadata_routes(),
+            middleware=[Middleware(self._NoCacheMiddleware)],
+        )
 
     def well_known_app(self) -> Router:
         """
@@ -74,11 +81,17 @@ class Auth0Mcp:
         for route in routes:
             path = route.path
             if path.startswith("/.well-known"):
-                path = path[len("/.well-known"):] or "/"
+                path = path[len("/.well-known") :] or "/"
             adjusted_routes.append(
-                Route(path, endpoint=route.endpoint, methods=list(route.methods) if route.methods else None)
+                Route(
+                    path,
+                    endpoint=route.endpoint,
+                    methods=list(route.methods) if route.methods else None,
+                )
             )
-        return Router(routes=adjusted_routes, middleware=[Middleware(self._NoCacheMiddleware)])
+        return Router(
+            routes=adjusted_routes, middleware=[Middleware(self._NoCacheMiddleware)]
+        )
 
     def _metadata_routes(self) -> list[Route]:
         return create_protected_resource_routes(
@@ -91,7 +104,9 @@ class Auth0Mcp:
     class _NoCacheMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request: Request, call_next: Callable) -> Response:  # type: ignore[override]
             response = await call_next(request)
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Cache-Control"] = (
+                "no-store, no-cache, must-revalidate, max-age=0"
+            )
             return response
 
     def auth_middleware(self) -> list[Middleware]:
@@ -107,7 +122,9 @@ class Auth0Mcp:
         if scopes:
             self._scopes_supported.update(scopes)
 
-    def exception_handlers(self) -> dict[int | type[Exception], Callable[[Request, Exception], Response]]:
+    def exception_handlers(
+        self,
+    ) -> dict[int | type[Exception], Callable[[Request, Exception], Response]]:
         return {
             AuthenticationRequired: self._auth_error_handler,
             InsufficientScope: self._auth_error_handler,
@@ -120,19 +137,26 @@ class Auth0Mcp:
         """
         Handle auth errors: malformed authorization requests, missing auth, invalid tokens, and insufficient scopes.
         """
+        # Type narrow to auth exceptions that have the required attributes
+        if not hasattr(exc, "status_code") or not hasattr(exc, "error_code"):
+            return self._generic_exception_handler(request, exc)
+
         # Include resource metadata parameter for 401 responses per RFC 9728 Section 5.1
-        include_resource_metadata = exc.status_code == 401
+        include_resource_metadata = exc.status_code == 401  # type: ignore[attr-defined]
 
         return JSONResponse(
-            {
-                "error": exc.error_code,
-                "error_description": exc.description
+            {"error": exc.error_code, "error_description": exc.description},  # type: ignore[attr-defined]
+            status_code=exc.status_code,  # type: ignore[attr-defined]
+            headers={
+                "WWW-Authenticate": self._build_www_authenticate_header(
+                    exc.error_code, exc.description, include_resource_metadata  # type: ignore[attr-defined]
+                )
             },
-            status_code=exc.status_code,
-            headers={"WWW-Authenticate": self._build_www_authenticate_header(exc.error_code, exc.description, include_resource_metadata)},
         )
 
-    def _generic_exception_handler(self, request: Request, exc: Exception) -> JSONResponse:
+    def _generic_exception_handler(
+        self, request: Request, exc: Exception
+    ) -> JSONResponse:
         """
         Fallback handler for all other exceptions.
         """
@@ -142,18 +166,26 @@ class Auth0Mcp:
         return JSONResponse(
             {
                 "error": "internal_server_error",
-                "error_description": "An unexpected error occurred"
+                "error_description": "An unexpected error occurred",
             },
             status_code=500,
         )
 
-    def _build_www_authenticate_header(self, error_code: str, description: str, include_resource_metadata: bool = False) -> str:
+    def _build_www_authenticate_header(
+        self, error_code: str, description: str, include_resource_metadata: bool = False
+    ) -> str:
         """
         Build WWW-Authenticate header according to RFC 9728 Section 5.1.
         """
-        www_auth_params = [f'error="{error_code}"', f'error_description="{description}"']
+        www_auth_params = [
+            f'error="{error_code}"',
+            f'error_description="{description}"',
+        ]
         if include_resource_metadata and self.mcp_server_url:
-            metadata_url = self.mcp_server_url.rstrip("/") + "/.well-known/oauth-protected-resource"
+            metadata_url = (
+                self.mcp_server_url.rstrip("/")
+                + "/.well-known/oauth-protected-resource"
+            )
             www_auth_params.append(f'resource_metadata="{metadata_url}"')
 
         return f"Bearer {', '.join(www_auth_params)}"

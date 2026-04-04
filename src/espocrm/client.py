@@ -1,4 +1,5 @@
 """EspoCRM API client with authentication support."""
+
 from __future__ import annotations
 
 import base64
@@ -6,7 +7,7 @@ import hashlib
 import hmac
 import json
 import logging
-from typing import Any, Literal, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import httpx
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class EspoCRMError(Exception):
     """Base exception for EspoCRM errors."""
+
     pass
 
 
@@ -37,14 +39,11 @@ class EspoCRMClient:
             headers={
                 "Content-Type": "application/json",
                 "Accept": "application/json",
-            }
+            },
         )
 
     def _build_auth_headers(
-        self,
-        method: str,
-        uri: str,
-        body: str = ""
+        self, method: str, uri: str, body: str = ""
     ) -> Dict[str, str]:
         """Build authentication headers for the request."""
         headers = {}
@@ -54,9 +53,7 @@ class EspoCRMClient:
         elif self.config.auth_method == "hmac" and self.config.secret_key:
             string_to_sign = f"{method} /{uri}{body}"
             signature = hmac.new(
-                self.config.secret_key.encode(),
-                string_to_sign.encode(),
-                hashlib.sha256
+                self.config.secret_key.encode(), string_to_sign.encode(), hashlib.sha256
             ).hexdigest()
             auth_string = f"{self.config.api_key}:{signature}"
             headers["X-Hmac-Authorization"] = base64.b64encode(
@@ -70,7 +67,7 @@ class EspoCRMClient:
         method: str,
         endpoint: str,
         data: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None
+        params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Make an authenticated request to EspoCRM API."""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
@@ -80,11 +77,7 @@ class EspoCRMClient:
 
         try:
             response = await self.client.request(
-                method,
-                url,
-                content=body,
-                params=params,
-                headers=headers
+                method, url, content=body, params=params, headers=headers
             )
             response.raise_for_status()
             return response.json()
@@ -96,19 +89,14 @@ class EspoCRMClient:
             raise EspoCRMError(f"Request failed: {str(e)}")
 
     async def get(
-        self,
-        entity: str,
-        params: Optional[Dict[str, Any]] = None
+        self, entity: str, params: Optional[Dict[str, Any]] = None
     ) -> EspoCRMResponse:
         """Get a list of entities."""
         data = await self._request("GET", entity, params=params)
         return EspoCRMResponse(**data)
 
     async def get_by_id(
-        self,
-        entity: str,
-        entity_id: str,
-        select: Optional[List[str]] = None
+        self, entity: str, entity_id: str, select: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """Get a specific entity by ID."""
         params = {}
@@ -116,32 +104,21 @@ class EspoCRMClient:
             params["select"] = ",".join(select)
         return await self._request("GET", f"{entity}/{entity_id}", params=params)
 
-    async def post(
-        self,
-        entity: str,
-        data: dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def post(self, entity: str, data: dict[str, Any]) -> Dict[str, Any]:
         """Create a new entity."""
         result = await self._request("POST", entity, data=data)
         logger.info(f"Created {entity} with ID: {result.get('id')}")
         return result
 
     async def put(
-        self,
-        entity: str,
-        entity_id: str,
-        data: dict[str, Any]
+        self, entity: str, entity_id: str, data: dict[str, Any]
     ) -> Dict[str, Any]:
         """Update an entity."""
         result = await self._request("PUT", f"{entity}/{entity_id}", data=data)
         logger.info(f"Updated {entity} with ID: {entity_id}")
         return result
 
-    async def delete(
-        self,
-        entity: str,
-        entity_id: str
-    ) -> bool:
+    async def delete(self, entity: str, entity_id: str) -> bool:
         """Delete an entity."""
         await self._request("DELETE", f"{entity}/{entity_id}")
         logger.info(f"Deleted {entity} with ID: {entity_id}")
@@ -155,7 +132,7 @@ class EspoCRMClient:
         order_by: str | None = None,
         order: Literal["asc", "desc"] = "asc",
         max_size: int = 20,
-        offset: int = 0
+        offset: int = 0,
     ) -> EspoCRMResponse:
         """Search for entities with filters."""
         params: dict[str, Any] = {
@@ -174,35 +151,23 @@ class EspoCRMClient:
         return await self.get(entity, params=params)
 
     async def link_records(
-        self,
-        entity: str,
-        entity_id: str,
-        link: str,
-        foreign_ids: list[str]
+        self, entity: str, entity_id: str, link: str, foreign_ids: list[str]
     ) -> bool:
         """Link records to an entity."""
         for foreign_id in foreign_ids:
             await self._request(
-                "POST",
-                f"{entity}/{entity_id}/{link}",
-                data={"id": foreign_id}
+                "POST", f"{entity}/{entity_id}/{link}", data={"id": foreign_id}
             )
         logger.info(f"Linked {entity}/{entity_id} to {link}: {foreign_ids}")
         return True
 
     async def unlink_records(
-        self,
-        entity: str,
-        entity_id: str,
-        link: str,
-        foreign_ids: list[str]
+        self, entity: str, entity_id: str, link: str, foreign_ids: list[str]
     ) -> bool:
         """Unlink records from an entity."""
         for foreign_id in foreign_ids:
             await self._request(
-                "DELETE",
-                f"{entity}/{entity_id}/{link}",
-                data={"id": foreign_id}
+                "DELETE", f"{entity}/{entity_id}/{link}", data={"id": foreign_id}
             )
         logger.info(f"Unlinked {entity}/{entity_id} from {link}: {foreign_ids}")
         return True
@@ -214,7 +179,7 @@ class EspoCRMClient:
             return {
                 "success": True,
                 "user": data.get("user"),
-                "version": data.get("settings", {}).get("version", "Unknown")
+                "version": data.get("settings", {}).get("version", "Unknown"),
             }
         except Exception as e:
             logger.error(f"Connection test failed: {str(e)}")

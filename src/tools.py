@@ -1,4 +1,5 @@
 """MCP tools for EspoCRM operations."""
+
 from __future__ import annotations
 
 import json
@@ -8,7 +9,11 @@ from typing import Any, Optional
 from mcp.server.fastmcp import Context
 
 from .auth0 import Auth0Mcp
-from .auth0.authz import register_required_scopes, require_fga_permission, require_scopes
+from .auth0.authz import (
+    register_required_scopes,
+    require_fga_permission,
+    require_scopes,
+)
 from .espocrm import EspoCRMClient, WhereClause
 
 logger = logging.getLogger(__name__)
@@ -56,7 +61,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         name="health_check",
         title="Health Check",
         description="Check EspoCRM connection and API status",
-        annotations={"readOnlyHint": True}
+        annotations={"readOnlyHint": True},
     )
     async def health_check() -> str:
         """Check EspoCRM connection and API status."""
@@ -64,22 +69,25 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         result = await client.test_connection()
 
         if result.get("success"):
-            return json.dumps({
-                "status": "healthy",
-                "user": result.get("user", {}).get("userName", "Unknown"),
-                "version": result.get("version", "Unknown")
-            }, indent=2)
+            return json.dumps(
+                {
+                    "status": "healthy",
+                    "user": result.get("user", {}).get("userName", "Unknown"),
+                    "version": result.get("version", "Unknown"),
+                },
+                indent=2,
+            )
         else:
-            return json.dumps({
-                "status": "unhealthy",
-                "error": result.get("error", "Unknown error")
-            }, indent=2)
+            return json.dumps(
+                {"status": "unhealthy", "error": result.get("error", "Unknown error")},
+                indent=2,
+            )
 
     # Contact tools
     @mcp.tool(
         name="create_contact",
         title="Create Contact",
-        description="Create a new contact in EspoCRM"
+        description="Create a new contact in EspoCRM",
     )
     @require_scopes(["espocrm:contacts:write"])
     async def create_contact(
@@ -90,7 +98,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         account_id: str | None = None,
         title: str | None = None,
         description: str | None = None,
-        ctx: Context | None = None
+        ctx: Context | None = None,
     ) -> str:
         """Create a new contact in EspoCRM."""
         client = get_espocrm_client()
@@ -117,7 +125,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         name="search_contacts",
         title="Search Contacts",
         description="Search for contacts in EspoCRM",
-        annotations={"readOnlyHint": True}
+        annotations={"readOnlyHint": True},
     )
     @require_scopes(["espocrm:contacts:read"])
     async def search_contacts(
@@ -125,31 +133,56 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         email_address: str | None = None,
         limit: int = 20,
         offset: int = 0,
-        ctx: Context | None = None
+        ctx: Context | None = None,
     ) -> str:
         """Search for contacts in EspoCRM."""
         client = get_espocrm_client()
 
         where = []
         if search_term:
-            where.append(WhereClause(
-                type="or",
-                value=[
-                    {"type": "contains", "attribute": "firstName", "value": search_term},
-                    {"type": "contains", "attribute": "lastName", "value": search_term},
-                    {"type": "contains", "attribute": "emailAddress", "value": search_term}
-                ]
-            ))
+            where.append(
+                WhereClause(
+                    type="or",
+                    value=[
+                        {
+                            "type": "contains",
+                            "attribute": "firstName",
+                            "value": search_term,
+                        },
+                        {
+                            "type": "contains",
+                            "attribute": "lastName",
+                            "value": search_term,
+                        },
+                        {
+                            "type": "contains",
+                            "attribute": "emailAddress",
+                            "value": search_term,
+                        },
+                    ],
+                )
+            )
         if email_address:
-            where.append(WhereClause(type="equals", attribute="emailAddress", value=email_address))
+            where.append(
+                WhereClause(
+                    type="equals", attribute="emailAddress", value=email_address
+                )
+            )
 
         response = await client.search(
             "Contact",
             where=where if where else None,
-            select=["id", "firstName", "lastName", "emailAddress", "phoneNumber", "accountName"],
+            select=[
+                "id",
+                "firstName",
+                "lastName",
+                "emailAddress",
+                "phoneNumber",
+                "accountName",
+            ],
             max_size=limit,
             offset=offset,
-            order_by="lastName"
+            order_by="lastName",
         )
 
         return format_entity_list(response.list or [], "contacts")
@@ -158,10 +191,12 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         name="get_contact",
         title="Get Contact",
         description="Get detailed information about a specific contact",
-        annotations={"readOnlyHint": True}
+        annotations={"readOnlyHint": True},
     )
     @require_scopes(["espocrm:contacts:read"])
-    @require_fga_permission(object_type="contact", object_id_param="contact_id", relation="can_read")
+    @require_fga_permission(
+        object_type="contact", object_id_param="contact_id", relation="can_read"
+    )
     async def get_contact(contact_id: str, ctx: Context | None = None) -> str:
         """Get detailed information about a specific contact."""
         client = get_espocrm_client()
@@ -172,7 +207,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
     @mcp.tool(
         name="create_account",
         title="Create Account",
-        description="Create a new account/company in EspoCRM"
+        description="Create a new account/company in EspoCRM",
     )
     @require_scopes(["espocrm:accounts:write"])
     async def create_account(
@@ -183,7 +218,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         email_address: str | None = None,
         phone_number: str | None = None,
         description: str | None = None,
-        ctx: Context | None = None
+        ctx: Context | None = None,
     ) -> str:
         """Create a new account/company in EspoCRM."""
         client = get_espocrm_client()
@@ -209,7 +244,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         name="search_accounts",
         title="Search Accounts",
         description="Search for accounts/companies in EspoCRM",
-        annotations={"readOnlyHint": True}
+        annotations={"readOnlyHint": True},
     )
     @require_scopes(["espocrm:accounts:read"])
     async def search_accounts(
@@ -218,7 +253,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         industry: str | None = None,
         limit: int = 20,
         offset: int = 0,
-        ctx: Context | None = None
+        ctx: Context | None = None,
     ) -> str:
         """Search for accounts/companies in EspoCRM."""
         client = get_espocrm_client()
@@ -227,9 +262,13 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         if name:
             where.append(WhereClause(type="contains", attribute="name", value=name))
         if account_type:
-            where.append(WhereClause(type="equals", attribute="type", value=account_type))
+            where.append(
+                WhereClause(type="equals", attribute="type", value=account_type)
+            )
         if industry:
-            where.append(WhereClause(type="contains", attribute="industry", value=industry))
+            where.append(
+                WhereClause(type="contains", attribute="industry", value=industry)
+            )
 
         response = await client.search(
             "Account",
@@ -237,7 +276,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
             select=["id", "name", "type", "industry", "website", "emailAddress"],
             max_size=limit,
             offset=offset,
-            order_by="name"
+            order_by="name",
         )
 
         return format_entity_list(response.list or [], "accounts")
@@ -246,7 +285,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
     @mcp.tool(
         name="create_lead",
         title="Create Lead",
-        description="Create a new lead in EspoCRM"
+        description="Create a new lead in EspoCRM",
     )
     @require_scopes(["espocrm:leads:write"])
     async def create_lead(
@@ -258,7 +297,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         account_name: str | None = None,
         status: str = "New",
         description: str | None = None,
-        ctx: Context | None = None
+        ctx: Context | None = None,
     ) -> str:
         """Create a new lead in EspoCRM."""
         client = get_espocrm_client()
@@ -285,7 +324,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         name="search_leads",
         title="Search Leads",
         description="Search for leads in EspoCRM",
-        annotations={"readOnlyHint": True}
+        annotations={"readOnlyHint": True},
     )
     @require_scopes(["espocrm:leads:read"])
     async def search_leads(
@@ -294,20 +333,22 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         source: str | None = None,
         limit: int = 20,
         offset: int = 0,
-        ctx: Context | None = None
+        ctx: Context | None = None,
     ) -> str:
         """Search for leads in EspoCRM."""
         client = get_espocrm_client()
 
         where = []
         if name:
-            where.append(WhereClause(
-                type="or",
-                value=[
-                    {"type": "contains", "attribute": "firstName", "value": name},
-                    {"type": "contains", "attribute": "lastName", "value": name}
-                ]
-            ))
+            where.append(
+                WhereClause(
+                    type="or",
+                    value=[
+                        {"type": "contains", "attribute": "firstName", "value": name},
+                        {"type": "contains", "attribute": "lastName", "value": name},
+                    ],
+                )
+            )
         if status:
             where.append(WhereClause(type="equals", attribute="status", value=status))
         if source:
@@ -319,7 +360,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
             select=["id", "firstName", "lastName", "status", "source", "accountName"],
             max_size=limit,
             offset=offset,
-            order_by="lastName"
+            order_by="lastName",
         )
 
         return format_entity_list(response.list or [], "leads")
@@ -329,7 +370,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         name="search_entity",
         title="Search Entity",
         description="Search any entity type in EspoCRM",
-        annotations={"readOnlyHint": True}
+        annotations={"readOnlyHint": True},
     )
     @require_scopes(["espocrm:entities:read"])
     async def search_entity(
@@ -338,7 +379,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         select: list[str] | None = None,
         limit: int = 20,
         offset: int = 0,
-        ctx: Context | None = None
+        ctx: Context | None = None,
     ) -> str:
         """Search any entity type in EspoCRM."""
         client = get_espocrm_client()
@@ -353,7 +394,7 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
             where=where if where else None,
             select=select,
             max_size=limit,
-            offset=offset
+            offset=offset,
         )
 
         return format_entity_list(response.list or [], entity_type)
@@ -362,15 +403,17 @@ def register_tools(auth0_mcp: Auth0Mcp) -> None:
         name="get_entity",
         title="Get Entity",
         description="Get a specific entity by ID",
-        annotations={"readOnlyHint": True}
+        annotations={"readOnlyHint": True},
     )
     @require_scopes(["espocrm:entities:read"])
-    @require_fga_permission(object_type="entity", object_id_param="entity_id", relation="can_read")
+    @require_fga_permission(
+        object_type="entity", object_id_param="entity_id", relation="can_read"
+    )
     async def get_entity(
         entity_type: str,
         entity_id: str,
         select: list[str] | None = None,
-        ctx: Context | None = None
+        ctx: Context | None = None,
     ) -> str:
         """Get a specific entity by ID."""
         client = get_espocrm_client()

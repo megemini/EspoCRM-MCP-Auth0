@@ -50,7 +50,7 @@ All tools (except `health_check`) require valid Auth0 authentication with approp
 
 When FGA is enabled, additional entity-level permission checks are performed:
 
-- **Contact Access**: 
+- **Contact Access**:
   - Owner: Full access (read, update, delete)
   - Assigned user: Read and update access
   - Team member: Read access
@@ -282,15 +282,15 @@ Advantages:
    Enable OAuth if you want MCP clients (e.g., CherryStudio) to authenticate interactively via Auth0 Universal Login. See [OAuth Setup](#oauth-setup-optional) for detailed instructions.
 
 6. **(Optional) Initialize FGA**
-   
+
    If you want to use fine-grained authorization:
-   
+
    ```bash
    # First, configure FGA credentials in .env
    # Then run the initialization script
    python scripts/fga_init.py
    ```
-   
+
    This will create the authorization model and sample data. Add the returned model ID to your `.env` file.
 
 7. **(Optional) Initialize Demo Data**
@@ -380,7 +380,7 @@ Fine-Grained Authorization provides entity-level access control. To enable FGA:
    ```bash
    python scripts/fga_init.py
    ```
-   
+
    This creates the authorization model for EspoCRM entities and writes sample tuples. The script will output the authorization model ID - add this to your `.env` file as `FGA_AUTHORIZATION_MODEL_ID`.
 
 4. **How It Works**:

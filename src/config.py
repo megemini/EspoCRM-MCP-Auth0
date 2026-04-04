@@ -1,9 +1,10 @@
 """Configuration management for EspoCRM MCP Server."""
+
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Literal, Optional, List
+from typing import List, Literal, Optional
 
 from dotenv import load_dotenv
 
@@ -11,6 +12,7 @@ from dotenv import load_dotenv
 @dataclass(frozen=True)
 class EspoCRMConfig:
     """EspoCRM connection configuration."""
+
     url: str
     api_key: str
     secret_key: Optional[str] = None
@@ -21,6 +23,7 @@ class EspoCRMConfig:
 @dataclass(frozen=True)
 class FGAConfig:
     """FGA (Fine-Grained Authorization) configuration."""
+
     api_url: str
     store_id: str
     client_id: str
@@ -34,6 +37,7 @@ class FGAConfig:
 @dataclass(frozen=True)
 class OAuthConfig:
     """OAuth configuration for dynamic token acquisition via Auth0 Universal Login."""
+
     client_id: str
     client_secret: str
     secret_key: str
@@ -43,6 +47,7 @@ class OAuthConfig:
 @dataclass(frozen=True)
 class Config:
     """Application configuration."""
+
     auth0_domain: str
     auth0_audience: str
     mcp_server_url: str
@@ -72,30 +77,36 @@ class Config:
         if not espocrm_api_key:
             raise ValueError("ESPOCRM_API_KEY environment variable is required")
 
+        auth_method = os.getenv("ESPOCRM_AUTH_METHOD", "apikey")
+        if auth_method not in ("apikey", "hmac"):
+            raise ValueError(
+                f"Invalid ESPOCRM_AUTH_METHOD: {auth_method}. Must be 'apikey' or 'hmac'"
+            )
+
         espocrm_config = EspoCRMConfig(
             url=espocrm_url,
             api_key=espocrm_api_key,
             secret_key=os.getenv("ESPOCRM_SECRET_KEY"),
-            auth_method=os.getenv("ESPOCRM_AUTH_METHOD", "apikey"),
+            auth_method=auth_method,  # type: ignore[arg-type]
             timeout=int(os.getenv("ESPOCRM_TIMEOUT", "30")),
         )
 
         # Load FGA configuration (optional)
         fga_config = None
         fga_enabled = os.getenv("FGA_ENABLED", "false").lower() == "true"
-        
+
         if fga_enabled:
             fga_api_url = os.getenv("FGA_API_URL")
             fga_store_id = os.getenv("FGA_STORE_ID")
             fga_client_id = os.getenv("FGA_CLIENT_ID")
             fga_client_secret = os.getenv("FGA_CLIENT_SECRET")
-            
+
             if not all([fga_api_url, fga_store_id, fga_client_id, fga_client_secret]):
                 raise ValueError(
                     "FGA is enabled but missing required configuration. "
                     "Please set FGA_API_URL, FGA_STORE_ID, FGA_CLIENT_ID, and FGA_CLIENT_SECRET"
                 )
-            
+
             fga_config = FGAConfig(
                 api_url=fga_api_url,
                 store_id=fga_store_id,
@@ -110,18 +121,18 @@ class Config:
         # Load OAuth configuration (optional - for dynamic token acquisition)
         oauth_config = None
         oauth_enabled = os.getenv("OAUTH_ENABLED", "false").lower() == "true"
-        
+
         if oauth_enabled:
             oauth_client_id = os.getenv("OAUTH_CLIENT_ID")
             oauth_client_secret = os.getenv("OAUTH_CLIENT_SECRET")
             oauth_secret_key = os.getenv("OAUTH_SECRET_KEY")
-            
+
             if not all([oauth_client_id, oauth_client_secret, oauth_secret_key]):
                 raise ValueError(
                     "OAuth is enabled but missing required configuration. "
                     "Please set OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, and OAUTH_SECRET_KEY"
                 )
-            
+
             oauth_config = OAuthConfig(
                 client_id=oauth_client_id,
                 client_secret=oauth_client_secret,

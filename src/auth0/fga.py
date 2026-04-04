@@ -1,13 +1,17 @@
 """FGA (Fine-Grained Authorization) client wrapper."""
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
-import openfga_sdk
 from openfga_sdk import ClientConfiguration, OpenFgaClient
-from openfga_sdk.client.models import ClientCheckRequest, ClientTuple, ClientWriteRequest
-from openfga_sdk.credentials import Credentials, CredentialConfiguration
+from openfga_sdk.client.models import (
+    ClientCheckRequest,
+    ClientTuple,
+    ClientWriteRequest,
+)
+from openfga_sdk.credentials import CredentialConfiguration, Credentials
 
 from .errors import InsufficientPermission
 
@@ -42,7 +46,7 @@ class FGAClient:
         # Derive api_audience from api_url if not provided
         if api_audience is None:
             api_audience = f"{api_url}/"
-        
+
         # Create credentials configuration following official SDK pattern
         credentials = Credentials(
             method="client_credentials",
@@ -51,9 +55,9 @@ class FGAClient:
                 api_audience=api_audience,
                 client_id=client_id,
                 client_secret=client_secret,
-            )
+            ),
         )
-        
+
         self.configuration = ClientConfiguration(
             api_url=api_url,
             store_id=store_id,
@@ -89,7 +93,7 @@ class FGAClient:
                 relation=relation,
                 object=f"{object_type}:{object_id}",
             )
-            
+
             # Check with optional authorization model ID
             options = {}
             if self.authorization_model_id:
@@ -157,7 +161,9 @@ class FGAClient:
         )
 
         request = ClientWriteRequest(writes=[tuple_data])
-        await self.client.write(request, authorization_model_id=self.authorization_model_id)
+        await self.client.write(
+            request, authorization_model_id=self.authorization_model_id
+        )
         logger.info(f"FGA tuple written: {user} {relation} {object_type}:{object_id}")
 
     async def write_tuples(self, tuples: list[dict[str, str]]) -> None:
@@ -182,7 +188,9 @@ class FGAClient:
             )
 
         request = ClientWriteRequest(writes=tuple_list)
-        await self.client.write(request, authorization_model_id=self.authorization_model_id)
+        await self.client.write(
+            request, authorization_model_id=self.authorization_model_id
+        )
         logger.info(f"FGA tuples written: {len(tuples)} tuples")
 
     async def delete_tuple(
@@ -211,7 +219,9 @@ class FGAClient:
         )
 
         request = ClientWriteRequest(deletes=[tuple_data])
-        await self.client.write(request, authorization_model_id=self.authorization_model_id)
+        await self.client.write(
+            request, authorization_model_id=self.authorization_model_id
+        )
         logger.info(f"FGA tuple deleted: {user} {relation} {object_type}:{object_id}")
 
     async def sync_entity_permissions(
@@ -238,39 +248,47 @@ class FGAClient:
 
         # Add owner relationship
         if owner:
-            tuples.append({
-                "user": owner,
-                "relation": "owner",
-                "object_type": entity_type,
-                "object_id": entity_id,
-            })
+            tuples.append(
+                {
+                    "user": owner,
+                    "relation": "owner",
+                    "object_type": entity_type,
+                    "object_id": entity_id,
+                }
+            )
 
         # Add assigned user relationship
         if assigned_user:
-            tuples.append({
-                "user": assigned_user,
-                "relation": "assigned",
-                "object_type": entity_type,
-                "object_id": entity_id,
-            })
+            tuples.append(
+                {
+                    "user": assigned_user,
+                    "relation": "assigned",
+                    "object_type": entity_type,
+                    "object_id": entity_id,
+                }
+            )
 
         # Add team relationship
         if team_id:
-            tuples.append({
-                "user": f"team:{team_id}",
-                "relation": "team",
-                "object_type": entity_type,
-                "object_id": entity_id,
-            })
+            tuples.append(
+                {
+                    "user": f"team:{team_id}",
+                    "relation": "team",
+                    "object_type": entity_type,
+                    "object_id": entity_id,
+                }
+            )
 
         # Add account relationship (for contacts/opportunities)
         if account_id and entity_type in ["contact", "opportunity"]:
-            tuples.append({
-                "user": f"account:{account_id}",
-                "relation": "account",
-                "object_type": entity_type,
-                "object_id": entity_id,
-            })
+            tuples.append(
+                {
+                    "user": f"account:{account_id}",
+                    "relation": "account",
+                    "object_type": entity_type,
+                    "object_id": entity_id,
+                }
+            )
 
         if tuples:
             await self.write_tuples(tuples)

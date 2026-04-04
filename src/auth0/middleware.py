@@ -1,4 +1,5 @@
 """Auth0 authentication middleware."""
+
 import logging
 from collections.abc import Callable
 from typing import Any
@@ -25,14 +26,11 @@ class Auth0Middleware(BaseHTTPMiddleware):
         super().__init__(app)
         if not domain or not audience:
             raise RuntimeError("domain and audience must be provided")
-        self.client = ApiClient(ApiClientOptions(
-            domain=domain,
-            audience=audience
-        ))
+        self.client = ApiClient(ApiClientOptions(domain=domain, audience=audience))
 
     def _build_auth_data(self, token: dict[str, Any]) -> dict[str, Any]:
         """Extract authentication data from verified token."""
-        client_id = token.get('client_id') or token.get('azp')
+        client_id = token.get("client_id") or token.get("azp")
         if not client_id:
             raise VerifyAccessTokenError("Token missing 'client_id' or 'azp' claim")
 
@@ -43,15 +41,13 @@ class Auth0Middleware(BaseHTTPMiddleware):
             "scopes": scopes,
         }
 
-        if expires_at := token.get('exp'):
+        if expires_at := token.get("exp"):
             auth_data["expires_at"] = expires_at
 
         # Extract extra claims with dict comprehension
-        extra_fields = {'sub', 'azp', 'name', 'email', 'client_id'}
+        extra_fields = {"sub", "azp", "name", "email", "client_id"}
         auth_data["extra"] = {
-            field: token[field]
-            for field in extra_fields
-            if field in token
+            field: token[field] for field in extra_fields if field in token
         }
 
         return auth_data
@@ -68,8 +64,7 @@ class Auth0Middleware(BaseHTTPMiddleware):
         token = auth_header[7:].strip()  # Remove "Bearer " prefix
         try:
             decoded_and_verified_token = await self.client.verify_access_token(
-                token,
-                required_claims=["sub"]
+                token, required_claims=["sub"]
             )
 
             # Set up authentication context

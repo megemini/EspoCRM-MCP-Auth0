@@ -1,4 +1,5 @@
 """Main server application for EspoCRM MCP Server with Auth0 authentication."""
+
 from __future__ import annotations
 
 import contextlib
@@ -27,7 +28,7 @@ auth0_mcp = Auth0Mcp(
     name="EspoCRM MCP Server",
     audience=config.auth0_audience,
     domain=config.auth0_domain,
-    mcp_server_url=config.mcp_server_url
+    mcp_server_url=config.mcp_server_url,
 )
 
 # Initialize EspoCRM client
@@ -88,7 +89,9 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         else:
             logger.info("FGA: Disabled (using scope-based authorization)")
         if oauth_manager:
-            logger.info("OAuth: Enabled (dynamic token acquisition via Auth0 Universal Login)")
+            logger.info(
+                "OAuth: Enabled (dynamic token acquisition via Auth0 Universal Login)"
+            )
         else:
             logger.info("OAuth: Disabled (manual token required)")
         yield
@@ -107,19 +110,21 @@ routes = [
 
 # Add OAuth routes if enabled
 if oauth_manager:
-    routes.extend([
-        Route("/auth/login", endpoint=oauth_manager.login, methods=["GET"]),
-        Route("/auth/callback", endpoint=oauth_manager.callback, methods=["GET"]),
-        Route("/auth/token", endpoint=oauth_manager.get_token, methods=["GET"]),
-        Route("/auth/logout", endpoint=oauth_manager.logout, methods=["GET"]),
-    ])
+    routes.extend(
+        [
+            Route("/auth/login", endpoint=oauth_manager.login, methods=["GET"]),
+            Route("/auth/callback", endpoint=oauth_manager.callback, methods=["GET"]),
+            Route("/auth/token", endpoint=oauth_manager.get_token, methods=["GET"]),
+            Route("/auth/logout", endpoint=oauth_manager.logout, methods=["GET"]),
+        ]
+    )
 
 # Add main MCP app route
 routes.append(
     Mount(
         "/",
         app=auth0_mcp.mcp.streamable_http_app(),
-        middleware=auth0_mcp.auth_middleware()
+        middleware=auth0_mcp.auth_middleware(),
     )
 )
 
@@ -150,5 +155,6 @@ app = CORSMiddleware(
 
 if __name__ == "__main__":
     import uvicorn
+
     logger.info(f"Starting server on port {config.port}")
     uvicorn.run(app, port=config.port)
