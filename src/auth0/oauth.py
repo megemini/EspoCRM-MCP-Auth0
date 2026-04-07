@@ -61,35 +61,8 @@ class OAuthManager:
         self.mcp_server_url = mcp_server_url.rstrip("/")
         self.secret_key = secret_key
 
-        # Default scopes for EspoCRM MCP
-        self.scopes = scopes or [
-            "openid",
-            "profile",
-            "email",
-            "espocrm:contacts:read",
-            "espocrm:contacts:write",
-            "espocrm:accounts:read",
-            "espocrm:accounts:write",
-            "espocrm:leads:read",
-            "espocrm:leads:write",
-            "espocrm:opportunities:read",
-            "espocrm:opportunities:write",
-            "espocrm:meetings:read",
-            "espocrm:meetings:write",
-            "espocrm:tasks:read",
-            "espocrm:tasks:write",
-            "espocrm:calls:read",
-            "espocrm:calls:write",
-            "espocrm:cases:read",
-            "espocrm:cases:write",
-            "espocrm:notes:read",
-            "espocrm:notes:write",
-            "espocrm:users:read",
-            "espocrm:teams:read",
-            "espocrm:teams:write",
-            "espocrm:entities:read",
-            "espocrm:entities:write",
-        ]
+        # Use provided scopes or default from config
+        self.scopes = scopes
 
         # Initialize OAuth client with Auth0
         self.oauth = OAuth()

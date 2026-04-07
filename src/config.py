@@ -41,6 +41,36 @@ class OAuthConfig:
     client_id: str
     client_secret: str
     secret_key: str
+    scopes: List[str] = field(
+        default_factory=lambda: [
+            "openid",
+            "profile",
+            "email",
+            "espocrm:contacts:read",
+            "espocrm:contacts:write",
+            "espocrm:accounts:read",
+            "espocrm:accounts:write",
+            "espocrm:leads:read",
+            "espocrm:leads:write",
+            "espocrm:opportunities:read",
+            "espocrm:opportunities:write",
+            "espocrm:meetings:read",
+            "espocrm:meetings:write",
+            "espocrm:tasks:read",
+            "espocrm:tasks:write",
+            "espocrm:calls:read",
+            "espocrm:calls:write",
+            "espocrm:cases:read",
+            "espocrm:cases:write",
+            "espocrm:notes:read",
+            "espocrm:notes:write",
+            "espocrm:users:read",
+            "espocrm:teams:read",
+            "espocrm:teams:write",
+            "espocrm:entities:read",
+            "espocrm:entities:write",
+        ]
+    )
     enabled: bool = True
 
 

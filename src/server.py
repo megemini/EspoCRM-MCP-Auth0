@@ -65,6 +65,7 @@ if config.oauth and config.oauth.enabled:
             auth0_audience=config.auth0_audience,
             mcp_server_url=config.mcp_server_url,
             secret_key=config.oauth.secret_key,
+            scopes=config.oauth.scopes,
         )
         logger.info("OAuth manager initialized successfully")
     except Exception as e:
