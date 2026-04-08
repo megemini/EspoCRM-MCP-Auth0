@@ -2,7 +2,7 @@
   "mcpServers": {
     "espocrm-mcp-auth0": {
       "type": "http",
-      "url": "http://localhost:3001/mcp",
+      "url": "http://localhost:3001",
       "headers": {
         "Authorization": "Bearer <your-auth0-access-token>"
       }
