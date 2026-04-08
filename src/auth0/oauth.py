@@ -61,8 +61,8 @@ class OAuthManager:
         self.mcp_server_url = mcp_server_url.rstrip("/")
         self.secret_key = secret_key
 
-        # Use provided scopes or default from config
-        self.scopes = scopes
+        # Use provided scopes or default to openid scopes
+        self.scopes = scopes or ["openid", "profile", "email"]
 
         # Initialize OAuth client with Auth0
         self.oauth = OAuth()
