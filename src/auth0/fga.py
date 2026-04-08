@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from openfga_sdk import ClientConfiguration, OpenFgaClient
 from openfga_sdk.client.models import (
@@ -27,9 +26,9 @@ class FGAClient:
         store_id: str,
         client_id: str,
         client_secret: str,
-        authorization_model_id: Optional[str] = None,
+        authorization_model_id: str | None = None,
         api_issuer: str = "auth.fga.dev",
-        api_audience: Optional[str] = None,
+        api_audience: str | None = None,
     ):
         """
         Initialize FGA client.
@@ -228,10 +227,10 @@ class FGAClient:
         self,
         entity_type: str,
         entity_id: str,
-        owner: Optional[str] = None,
-        assigned_user: Optional[str] = None,
-        team_id: Optional[str] = None,
-        account_id: Optional[str] = None,
+        owner: str | None = None,
+        assigned_user: str | None = None,
+        team_id: str | None = None,
+        account_id: str | None = None,
     ) -> None:
         """
         Sync permissions for an EspoCRM entity.
@@ -300,7 +299,7 @@ class FGAClient:
 
 
 # Global FGA client instance
-_fga_client: Optional[FGAClient] = None
+_fga_client: FGAClient | None = None
 
 
 def get_fga_client() -> FGAClient:

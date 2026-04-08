@@ -1,8 +1,6 @@
 """Type definitions for EspoCRM API."""
 
-from __future__ import annotations
-
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -38,4 +36,4 @@ class EspoCRMResponse(BaseModel):
     """Standard EspoCRM API response."""
 
     total: Optional[int] = None
-    list: Optional[List[Dict[str, Any]]] = None
+    list: Optional[List[dict[str, Any]]] = None

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import Literal
 
 from dotenv import load_dotenv
 
@@ -15,7 +15,7 @@ class EspoCRMConfig:
 
     url: str
     api_key: str
-    secret_key: Optional[str] = None
+    secret_key: str | None = None
     auth_method: Literal["apikey", "hmac"] = "apikey"
     timeout: int = 30
 
@@ -28,9 +28,9 @@ class FGAConfig:
     store_id: str
     client_id: str
     client_secret: str
-    authorization_model_id: Optional[str] = None
+    authorization_model_id: str | None = None
     api_issuer: str = "auth.fga.dev"
-    api_audience: Optional[str] = None
+    api_audience: str | None = None
     enabled: bool = True
 
 
@@ -41,7 +41,7 @@ class OAuthConfig:
     client_id: str
     client_secret: str
     secret_key: str
-    scopes: List[str] = field(
+    scopes: list[str] = field(
         default_factory=lambda: [
             "openid",
             "profile",
@@ -82,11 +82,11 @@ class Config:
     auth0_audience: str
     mcp_server_url: str
     espocrm: EspoCRMConfig
-    fga: Optional[FGAConfig] = None
-    oauth: Optional[OAuthConfig] = None
+    fga: FGAConfig | None = None
+    oauth: OAuthConfig | None = None
     port: int = 3001
     debug: bool = True
-    cors_origins: List[str] = field(default_factory=lambda: ["*"])
+    cors_origins: list[str] = field(default_factory=lambda: ["*"])
 
     @classmethod
     def from_env(cls) -> Config:

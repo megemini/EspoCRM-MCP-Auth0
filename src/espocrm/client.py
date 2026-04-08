@@ -7,7 +7,7 @@ import hashlib
 import hmac
 import json
 import logging
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 import httpx
 
@@ -44,7 +44,7 @@ class EspoCRMClient:
 
     def _build_auth_headers(
         self, method: str, uri: str, body: str = ""
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Build authentication headers for the request."""
         headers = {}
 
@@ -66,9 +66,9 @@ class EspoCRMClient:
         self,
         method: str,
         endpoint: str,
-        data: Optional[Dict[str, Any]] = None,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Make an authenticated request to EspoCRM API."""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         body = json.dumps(data) if data else ""
@@ -89,22 +89,22 @@ class EspoCRMClient:
             raise EspoCRMError(f"Request failed: {str(e)}")
 
     async def get(
-        self, entity: str, params: Optional[Dict[str, Any]] = None
+        self, entity: str, params: dict[str, Any] | None = None
     ) -> EspoCRMResponse:
         """Get a list of entities."""
         data = await self._request("GET", entity, params=params)
         return EspoCRMResponse(**data)
 
     async def get_by_id(
-        self, entity: str, entity_id: str, select: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, entity: str, entity_id: str, select: list[str] | None = None
+    ) -> dict[str, Any]:
         """Get a specific entity by ID."""
         params = {}
         if select:
             params["select"] = ",".join(select)
         return await self._request("GET", f"{entity}/{entity_id}", params=params)
 
-    async def post(self, entity: str, data: dict[str, Any]) -> Dict[str, Any]:
+    async def post(self, entity: str, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new entity."""
         result = await self._request("POST", entity, data=data)
         logger.info(f"Created {entity} with ID: {result.get('id')}")
@@ -112,7 +112,7 @@ class EspoCRMClient:
 
     async def put(
         self, entity: str, entity_id: str, data: dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update an entity."""
         result = await self._request("PUT", f"{entity}/{entity_id}", data=data)
         logger.info(f"Updated {entity} with ID: {entity_id}")
@@ -127,8 +127,8 @@ class EspoCRMClient:
     async def search(
         self,
         entity: str,
-        where: Optional[List[WhereClause]] = None,
-        select: Optional[List[str]] = None,
+        where: list[WhereClause] | None = None,
+        select: list[str] | None = None,
         order_by: str | None = None,
         order: Literal["asc", "desc"] = "asc",
         max_size: int = 20,
@@ -172,7 +172,7 @@ class EspoCRMClient:
         logger.info(f"Unlinked {entity}/{entity_id} from {link}: {foreign_ids}")
         return True
 
-    async def test_connection(self) -> Dict[str, Any]:
+    async def test_connection(self) -> dict[str, Any]:
         """Test the connection to EspoCRM."""
         try:
             data = await self._request("GET", "App/user")
@@ -190,7 +190,7 @@ class EspoCRMClient:
         entity: str,
         entity_id: str,
         link: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> EspoCRMResponse:
         """Get related entities for a given entity link."""
         data = await self._request(
